@@ -32,7 +32,7 @@ def get_result():
     global Busy
     if get_state():
         Busy = False
-        response = FileResponse("result.xlsx",filename="result.xlsx", media_type='application/octet-stream')
+        response = FileResponse("./result/result.xlsx",filename="result.xlsx", media_type='application/octet-stream')
         os.remove("result.xlsx")
         return response
     

@@ -1,0 +1,17 @@
+# Web scraping dependencies
+beautifulsoup4>=4.12.0
+selenium>=4.15.0
+
+# Data manipulation and analysis
+numpy>=2.0.0
+pandas>=2.0.0
+openpyxl>=3.1.0
+
+# Progress bar
+tqdm>=4.65.0
+
+# File download utility
+wget>=3.2
+
+# Built-in modules (no installation needed):
+# sys, os, subprocess, time, zipfile
