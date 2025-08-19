@@ -30,10 +30,11 @@ def read_root():
 @app.get("/file")
 def get_result():
     global Busy
+    print("Trying to get result")
     if get_state():
         Busy = False
         response = FileResponse("./result/result.xlsx",filename="result.xlsx", media_type='application/octet-stream')
-        os.remove("result.xlsx")
+        os.remove("./result/result.xlsx")
         return response
     
 @app.get("/finished")
