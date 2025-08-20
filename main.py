@@ -83,7 +83,7 @@ async def search_news(request: NewsRequest):
     Busy = True
 
     #QUASE FUNCIONANDO, FALTA FAZER ISSO ASSINCRONO DE VERDADE
-    asyncio.create_task(asyncio.create_subprocess_exec(f"py ./{script_table[request.fonte]} 0 {int(request.max_news)} {request.keyword}"))
+    os.system(f"start ./{script_table[request.fonte]} 0 {int(request.max_news)} {request.keyword}")
 
     return {
         "status": "success",
