@@ -1,55 +1,15 @@
-try:
-    import sys
-    from bs4 import BeautifulSoup
-    from selenium import webdriver
+from bs4 import BeautifulSoup
+from selenium import webdriver
+from tqdm  import tqdm
+import pandas as pd
+import time
+import sys
 
-    from selenium.webdriver.common.by import By
-    from selenium.webdriver.support.wait import WebDriverWait
-    from selenium.webdriver.support import expected_conditions as EC
-    from selenium.webdriver.chrome.service import Service
-    from selenium.webdriver.common.action_chains import ActionChains
-
-    import pandas as pd
-    import time
-
-    from tqdm import tqdm
-
-    if input("Deseja rodar preparação de ambiente (RECOMENDADO PARA PRIMEIRA VEZ): [sim/não]") in ["sim", "Sim", "S", "s"]:
-        raise Exception("Preparação de ambiente solicitada")
-except:
-    import os
-    import subprocess
-    print("Configurando ambiente")
-    
-    os.system("pip install -r requirements.txt")
-
-    import wget
-    import zipfile
-
-    if "chromedriver" not in os.listdir():
-        print("Downloading chromedriver")
-        filename = wget.download("https://storage.googleapis.com/chrome-for-testing-public/134.0.6998.165/win64/chromedriver-win64.zip")
-        with zipfile.ZipFile(f"./{filename}", 'r') as zip_ref:
-            zip_ref.extractall("./chromedriver")
-    else:
-        print("Chromedriver found!")
-    
-    if "brave" not in os.listdir():
-        print("Downloading brave")
-        filename = wget.download("https://github.com/brave/brave-browser/releases/download/v1.76.82/brave-v1.76.82-win32-x64.zip")
-        with zipfile.ZipFile(f"./{filename}", 'r') as zip_ref:
-            zip_ref.extractall("./brave")
-    else:
-        print("Brave found!")
-
-    from tqdm import tqdm
-    from selenium import webdriver
-    from selenium.webdriver.support.wait import WebDriverWait
-    from selenium.webdriver.support import expected_conditions as EC
-    from selenium.webdriver.chrome.service import Service
-    
-    from bs4 import BeautifulSoup
-    import pandas as pd
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.action_chains import ActionChains
 
 options = webdriver.ChromeOptions()
 
@@ -57,7 +17,7 @@ options.binary_location = "./brave/brave.exe"
 
 driverpath = Service("./chromedriver/chromedriver-win64/chromedriver.exe")
 
-# options.add_argument('--headless=new')
+options.add_argument('--headless=new')
 options.add_argument('--no-sandbox')
 options.add_argument('--disable-dev-shm-usage')  # Evita problemas de memória compartilhada
 options.add_argument('--disable-web-security')
@@ -79,32 +39,17 @@ def articleFormatter(article, tag, progress_bar=None):
         "tag": tag
     }
 
-def SCfilter(article):
-    cidades_sc1 = pd.read_excel('./planilhas/cidade_sc1.xlsx')
-    
-    for key in [" sc ", "santa catarina", " sc", "sc "]:
-        if key in article["title"].lower():
-            return True
-        
-        
-    for key in ["-sc-", "santa-catarina", "-sc", "sc-"]:
-        if key in article["link"].split("/")[-1].lower():
-            return True
+Verbose = False
 
-    for cidade in cidades_sc1["MUNICIPIO"]:
-        if cidade.lower() in article["title"].lower() or cidade.lower() in article["link"].split("/")[-1].lower():
-            return True
-
-    return False
+def printVerbose(s):
+    global Verbose
+    if Verbose:
+        print(s)
 
 def getNewsByTags(tags):
     global driver
     allNews = []
-    news_counter = 0
     for tag in tags:
-        news_counter += 1
-        if news_counter == max_news: break
-        
         acessed = False
         
         while not acessed:
@@ -112,7 +57,7 @@ def getNewsByTags(tags):
                 driver.get(f"https://ndmais.com.br/?s={tag}")
                 acessed = True
             except:
-                print("Erro ao acessar a página, reiniciando navegador...")
+                printVerbose("Erro ao acessar a página, reiniciando navegador...")
                 driver.quit()
                 driver = webdriver.Chrome(service=driverpath, options=options)
 
@@ -120,6 +65,16 @@ def getNewsByTags(tags):
 
 
         while True:
+            soup = BeautifulSoup(driver.page_source, 'html.parser')
+            news = soup.find_all('div', class_='site-card-content')
+            print()
+            print(f"max {max_news} len {len(news)}")
+            print()
+
+            if len(news) >= max_news:
+                print("Max number of new reached")
+                break
+
             try:
                 ActionChains(driver).scroll_by_amount(0, 10000).perform()
                 
@@ -132,33 +87,27 @@ def getNewsByTags(tags):
                 WebDriverWait(driver, 10).until_not( EC.visibility_of_element_located( (By.CSS_SELECTOR, "i[class=\"button-icon fas fa-spin fa-sync nd-fa-loaded\"]") ) )
 
             except Exception as e:
-                print(e)
-                print(f"Page {tag} carregada completamente")
+                printVerbose(e)
+                printVerbose(f"Page {tag} carregada completamente")
                 break            
         
-        soup = BeautifulSoup(driver.page_source, 'html.parser')
-
-        news = soup.find_all('div', class_='site-card-content')
-
+        news = news[:max_news]
         
+        printVerbose(f"NEW max {max_news} len {len(news)}")
+
         progress_bar = tqdm(total=len(news), desc=f"Formatando notícias com a tag {tag}", unit="notícias")
         parsedNews = [articleFormatter(article, tag, progress_bar) for article in news]
 
-        print("Notícias formatadas!")
+        printVerbose("Notícias formatadas!")
 
-        print(f"Filtrando notícias com a tag {tag}...")
-        parsedNews = list(filter(SCfilter, parsedNews))
-                
-        print("Notícias Filtradas!")
-        
         allNews += parsedNews
 
 
-        print(f"\nPlanilha salva com {len(allNews)} notícias para backup...")
+        printVerbose(f"\nPlanilha salva com {len(allNews)} notícias para backup...")
         storeAsExcel(allNews)
-        print("Salvo\n")
+        printVerbose("Salvo\n")
             
-        print(f"\nNoticias coletadas: {len(parsedNews)}\nTag: {tag}\nTotal: {len(allNews)}\n")
+        printVerbose(f"\nNoticias coletadas: {len(parsedNews)}\nTag: {tag}\nTotal: {len(allNews)}\n")
         
             
     return allNews
@@ -167,24 +116,29 @@ def storeAsExcel(data):
     rows = list(map(lambda article: article.values(), data))
     df = pd.DataFrame(rows, columns=["title", "link", "data", "tag"])
     
-    print(f"Número de noticias com duplicados: {len(df)}")
+    printVerbose(f"Número de noticias com duplicados: {len(df)}")
     
     df = df.drop("tag", axis=1)
     df = df.drop_duplicates()
     
-    print(f"Número de noticias sem duplicados: {len(df)}")
+    printVerbose(f"Número de noticias sem duplicados: {len(df)}")
     
-    df.to_excel("./planilhas/noticias_ndmais.xlsx", index=False)
+    df.to_excel("./result/result.xlsx", index=False)
     
 
+searchReference = sys.argv[3:]
+max_news =  int(sys.argv[2])
+Verbose =  int(sys.argv[1])
 
-searchReference = sys.argv[2:]
-max_news =  int(sys.argv[1]) if sys.argv[1].isalnum() else 100
+if Verbose in [1,0]:
+    Verbose = bool(Verbose)
+else:
+    raise TypeError("Verbose Must be 1 or 0")
 
 searchReference = list(map(lambda x: x.replace(" ", "+"), searchReference))
 
 data = getNewsByTags(searchReference)
 
-print(data)
+printVerbose(data)
 
 storeAsExcel(data)

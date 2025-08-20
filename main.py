@@ -1,8 +1,11 @@
+import time
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 import os
+import subprocess
+import asyncio
 
 app = FastAPI()
 
@@ -23,18 +26,27 @@ class NewsRequest(BaseModel):
 
 Busy = False
 
+async def result_cleaner():
+    await asyncio.sleep(2)
+    os.remove("./result/result.xlsx")
+
+
+def busySetter(value):
+    global Busy
+    Busy = value
+
 @app.get("/")
 def read_root():
     return FileResponse("main.html")
 
 @app.get("/file")
-def get_result():
+async def get_result():
     global Busy
     print("Trying to get result")
     if get_state():
         Busy = False
         response = FileResponse("./result/result.xlsx",filename="result.xlsx", media_type='application/octet-stream')
-        os.remove("./result/result.xlsx")
+        asyncio.create_task(result_cleaner())
         return response
     
 @app.get("/finished")
@@ -50,8 +62,14 @@ def get_busy():
     
     return Busy
 
+script_table = {
+    "G1": "G1.py",
+    "nd+": "NDmais2.py",
+    "NSC": "NSC.py"
+}
+
 @app.post("/")
-def search_news(request: NewsRequest):
+async def search_news(request: NewsRequest):
     global Busy
     if Busy:
         return {
@@ -61,8 +79,11 @@ def search_news(request: NewsRequest):
     print(f"Palavra-chave recebida: {request.keyword}")
     print(f"Fonte recebida: {request.fonte}")
     print(f"Número máximo de notícias: {request.max_news}")
-    
+
     Busy = True
+
+    #QUASE FUNCIONANDO, FALTA FAZER ISSO ASSINCRONO DE VERDADE
+    asyncio.create_task(asyncio.create_subprocess_exec(f"py ./{script_table[request.fonte]} 0 {int(request.max_news)} {request.keyword}"))
 
     return {
         "status": "success",
