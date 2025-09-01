@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+    <title>Document</title>
+    <style>
+        *{
+            font-family: "Inter", sans-serif;
+            font-optical-sizing: auto;
+            font-weight: 400;
+            font-style: normal;
+            font-size: 16px;
+            color: #2E2E2E;
+
+            box-sizing: border-box;
+            --primary-color: #B7FFC9;
+            --dark-primary: #4A8057;
+        }
+        body{
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+
+            padding: 25px;
+            padding-bottom: 0;
+
+            background-image: url("./assets/Main\ Page.png");
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-attachment: fixed;
+
+            width: 100%;
+            height: 100%;
+        }
+
+        #logo{
+            width: 30vw;
+            min-width: 250px;
+            max-width: 800px;
+
+            margin-bottom: 25px;
+        }
+
+        main{
+            /* height: 600px; */
+            width: 400px;
+
+            margin-top: 8px;
+
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px 1px rgba(0,0,0,0.25);
+            box-sizing: border-box;
+
+            overflow: hidden;
+        }
+
+        #form-header{
+            display: flex;
+            flex-direction: row;
+            justify-content: left;
+            gap: 8px;
+            align-items: center;
+            height: 60px;
+            /* background-color: red; */
+            border-bottom: 1px solid var(--primary-color);
+        }
+
+        .icons_containers{
+            /* padding-top: 8px;
+            padding-bottom: 8px; */
+            transition: 500ms ease-in-out;
+            height: 60px;
+            width: 50px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+        }
+
+        .icons_containers.selected{
+            background-color: var(--primary-color);
+            width: 60px;
+            transition: 500ms ease-in-out;
+            align-items: center;
+        }
+
+        .tab_title{
+            color: var(--dark-primary);
+            font-weight: 700;
+        }
+
+        .tab_title_container{
+            display: grid;
+            overflow: hidden;
+            grid-template-columns: 0;
+            transition: 500ms ease-in-out;
+        }
+
+        .tab_title_container.show{
+            flex-grow: 1;
+        }
+
+        .icons{
+            width: 24px;
+        }
+
+        form{
+            display: flex;
+            gap: 16px;
+            flex-direction: column;
+            justify-content: center;
+
+            padding: 20px;
+        }
+
+        input, select{
+            appearance: none;
+            border: none;
+            border-radius: 8px;
+            padding: 15px;
+            padding-left: 20px;
+            padding-right: 20px;
+            background-color: white;
+            box-shadow: inset 0px 0px 5px 0px rgba(0,0,0,0.25);
+        }
+
+        input[type=submit]{
+            background-color: var(--primary-color);
+            box-shadow: none;
+        }
+        input[type=submit]:hover{
+            background-color: var(--primary-color);
+            box-shadow: inset 0px 0px 5px 0px rgba(0,0,0,0.25);
+        }
+
+        .input_group{
+            display: flex;
+            gap: 8px;
+            flex-direction: column;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <img id="logo" src="./assets/webs logo.svg" alt="">
+    <span>Clique para saber mais sobre o projeto</span>
+    <main>
+        <div id="form-header">
+            <div id="home_tab" class="icons_containers selected" onclick={switchTabs(0)}>
+                <img class="icons" src="./assets/home.svg" alt="">
+            </div>
+            <div id="home_tab_text" class="tab_title_container show">
+                <span class="tab_title">Buscador</span>
+            </div>
+
+            <div id="classes_tab" class="icons_containers" onclick={switchTabs(1)}>
+                <img class="icons" src="./assets/apps.svg" alt="">
+            </div>
+            <div id="classes_tab_text" class="tab_title_container">
+                <span class="tab_title">Classificações</span>
+            </div>
+
+            <div id="settings_tab" class="icons_containers" onclick={switchTabs(2)}>
+                <img class="icons" src="./assets/settings.svg" alt="">
+            </div>
+            <div id="settings_tab_text" class="tab_title_container">
+                <span class="tab_title">Configurações</span>
+            </div>
+        </div>
+        <div>
+            <form action="POST">
+                <div class="input_group">
+                    <label for="tags">Palavras-Chave:</label>
+                    <input name="tags" type="text" placeholder="Digite as palavras-chave de busca">
+                </div>
+                <div class="input_group">
+                    <label for="tags">Veículo de Notícia</label>
+                    <select name="" id="">
+                        <option value="none" disabled selected>Selecione sua fonte</option>
+                    </select>
+                </div>
+                <div class="input_group">
+                    <label for="tags">Classificação</label>
+                    <select name="" id="">
+                        <option value="none" disabled selected>Selecione seu grupo de categorias</option>
+                    </select>
+                </div>
+                <div class="input_group">
+                    <label for="tags">Número Máximo de Notícias</label>
+                    <input type="text" placeholder="Informe o número máximo de notícias">
+                </div>
+                <input type="submit" value="Buscar">
+            </form>
+        </div>
+    </main>
+</body>
+<script>
+    let menu_tab = 0
+
+    function switchTabs(tab){
+        let home_tab = document.getElementById("home_tab")
+        let classes_tab = document.getElementById("classes_tab")
+        let settings_tab = document.getElementById("settings_tab")
+        let home_tab_text = document.getElementById("home_tab_text")
+        let classes_tab_text = document.getElementById("classes_tab_text")
+        let settings_tab_text = document.getElementById("settings_tab_text")
+        if (tab == 0){
+            home_tab.classList.add("selected")
+            classes_tab.classList.remove("selected")
+            settings_tab.classList.remove("selected")
+            
+            home_tab_text.classList.add("show")
+            classes_tab_text.classList.remove("show")
+            settings_tab_text.classList.remove("show")
+        } else if(tab == 1){
+            home_tab.classList.remove("selected")
+            classes_tab.classList.add("selected")
+            settings_tab.classList.remove("selected")
+            
+            home_tab_text.classList.remove("show")
+            classes_tab_text.classList.add("show")
+            settings_tab_text.classList.remove("show")
+        } else if(tab == 2){
+            home_tab.classList.remove("selected")
+            classes_tab.classList.remove("selected")
+            settings_tab.classList.add("selected")
+            
+            home_tab_text.classList.remove("show")
+            classes_tab_text.classList.remove("show")
+            settings_tab_text.classList.add("show")
+        }
+    }
+</script>
+</html>
