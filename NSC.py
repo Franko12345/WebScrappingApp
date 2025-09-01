@@ -103,8 +103,8 @@ def storeAsExcel(data, final=False):
         df.to_excel("./result/result.xlsx", index=False)
             
 
-searchReference = sys.argv[2:]
-max_news = int(sys.argv[1])
+searchReference = sys.argv[3:]
+max_news = int(sys.argv[2])
 
 searchReference = {x:int(round((max_news/10)+0.5)) for x in list(map(lambda x: x.replace(" ", "+"), searchReference))}
 

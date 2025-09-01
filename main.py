@@ -65,7 +65,7 @@ def get_busy():
 script_table = {
     "G1": "G1.py",
     "nd+": "NDmais2.py",
-    "NSC": "NSC.py"
+    "nsc": "NSC.py"
 }
 
 @app.post("/")
