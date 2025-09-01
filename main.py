@@ -82,7 +82,6 @@ async def search_news(request: NewsRequest):
 
     Busy = True
 
-    #QUASE FUNCIONANDO, FALTA FAZER ISSO ASSINCRONO DE VERDADE
     os.system(f"start ./{script_table[request.fonte]} 0 {int(request.max_news)} {request.keyword}")
 
     return {
