@@ -1,11 +1,16 @@
-import time
+import os
+from signal import SIGTERM
+from threading import Thread
+
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-import os
-import subprocess
-import asyncio
+from asyncio import sleep, create_task
+from uvicorn import run as uvi_run
+from webview import settings as webview_settings
+from webview import start as webview_start
+from webview import create_window
 
 app = FastAPI()
 
@@ -27,7 +32,7 @@ class NewsRequest(BaseModel):
 Busy = False
 
 async def result_cleaner():
-    await asyncio.sleep(2)
+    await sleep(2)
     os.remove("./result/result.xlsx")
 
 
@@ -46,7 +51,7 @@ async def get_result():
     if get_state():
         Busy = False
         response = FileResponse("./result/result.xlsx",filename="result.xlsx", media_type='application/octet-stream')
-        asyncio.create_task(result_cleaner())
+        create_task(result_cleaner())
         return response
     
 @app.get("/finished")
@@ -64,7 +69,7 @@ def get_busy():
 
 script_table = {
     "G1": "G1.py",
-    "nd+": "NDmais2.py",
+    "nd+": "NDmais.py",
     "nsc": "NSC.py"
 }
 
@@ -93,3 +98,21 @@ async def search_news(request: NewsRequest):
             "max_news": request.max_news
         }
     }
+
+
+def serve():
+    uvi_run(app, port=5555, reload=False)
+
+def open_window():
+    webview_settings['ALLOW_DOWNLOADS'] = True
+    create_window('Buscador de noticias', 'http://localhost:5555')
+    webview_start()
+
+if __name__ == "__main__":
+    t1 = Thread(target=serve)
+    t1.start()
+
+    open_window()
+    
+    os.kill(os.getpid(), SIGTERM)
+    
