@@ -6,7 +6,252 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+    <link href="https://cdn-uicons.flaticon.com/uicons-regular-rounded/css/uicons-regular-rounded.css" rel="stylesheet">
     <title>Document</title>
+    <!--Slider-->
+    <style>
+                /* From Uiverse.io by gharsh11032000 */ 
+        /* The switch - the box around the slider */
+        .switch {
+            font-size: 17px;
+            position: relative;
+            display: inline-block;
+            width: 4em;
+            height: 2em;
+        }
+
+        /* Hide default HTML checkbox */
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        /* The slider */
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: white;
+            border-radius: 50px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 5px 0px rgba(0,0,0,0.25);
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 34px;
+            width: 34px;
+            inset: 0;
+            background-color: #D9D9D9;
+            border-radius: 50px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .switch input:checked + .slider:before{
+            background-color: var(--primary-color);
+        }
+
+        /* .switch input:checked + .slider {
+            background: #0974f1;    
+        }
+
+        .switch input:focus + .slider {
+            box-shadow: 0 0 1px #0974f1;
+        } */
+
+        .switch input:checked + .slider:before {
+            transform: translateX(2.1em);
+        }
+    </style>
+    <!--Form-->
+    <style>
+        @import "https://unpkg.com/open-props" layer(design.system);
+        form{
+            display: flex;
+            flex-grow: 1;
+            height: 100%;
+            gap: 20px;
+            flex-direction: column;
+            justify-content: space-between;
+
+            padding: 20px;
+        }
+
+        #form_content{
+            display: flex;
+            gap: 20px;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        input, select{
+            appearance: none;
+            border: none;
+            border-radius: 8px;
+            padding: 15px;
+            padding-left: 20px;
+            padding-right: 20px;
+            background-color: white;
+            box-shadow: inset 0px 0px 5px 0px rgba(0,0,0,0.25);
+        }
+
+        select{
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            &, &::picker(select){
+                border: 0;
+                appearance: base-select;
+            }
+
+            &::picker(select){
+                border-radius: 8px;
+                margin-block-start: 8px;
+                box-shadow:  0px 0px 5px 0px rgba(0,0,0,0.25);
+            }
+            &::picker-icon{
+                display: none;
+            }
+            .picker{
+                height: 16px;
+                transition: rotate 0.3s ease;
+
+                :open & {
+                    rotate: 90deg;
+                }
+            }
+
+            selectedcontent > * {
+                transition: 
+                transform 1s var(--ease-spring-4),
+                display 1s allow-discrete, 
+                opacity 1s;
+                
+                @starting-style {
+                    opacity: 0;
+                    transform: translateY(10px);
+                }
+                opacity: 1;
+            }
+        }
+
+        option{
+            padding: 1rem;
+            background-color: white;
+        }
+        option::checkmark{
+            display: none;
+        }
+
+        /* option:not(:checked):hover{
+            box-shadow: inset 0px 0px 5px 0px rgba(0,0,0,0.25);
+        } */
+
+        option::highlight{
+            background-color: red;
+        }
+
+        option:disabled{
+            display: none;
+        }
+
+        option:checked{
+            background-color: var(--primary-color);
+        }
+
+        input[type=submit]{
+            text-align: center;
+            background-color: var(--primary-color);
+            box-shadow: none;
+        }
+        input[type=submit]:hover{
+            background-color: var(--primary-color);
+            box-shadow: inset 0px 0px 5px 0px rgba(0,0,0,0.25);
+        }
+    </style>
+    <!--Dialog-->
+    <style>
+        dialog{
+            border: 0;
+            width: 800px;
+            padding: 20px;
+            padding-left: 60px;
+            padding-right: 60px;
+            
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px 1px rgba(0,0,0,0.25);
+            
+            --duration: 150ms;
+            --start-opacity: 0.5;
+            --start-scale: scale(0.8);
+            opacity: var(--start-opacity);
+            transform: var(--start-scale);
+            transition: opacity var(--duration) ease-out, transform var(--duration) cubic-bezier(0, 0, 0.2, 1), overlay var(--duration) allow-discrete, display var(--duration) allow-discrete;
+        }
+        dialog[open] {
+            opacity: 1;
+            transform: scale(1);
+            @starting-style {
+                opacity: var(--start-opacity);
+                transform: var(--start-scale);
+            }
+        }
+
+        #dialog_content{
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        #show_reference{
+            font-weight: 700;
+            text-decoration: underline;
+            color: #808080;
+            cursor: help;
+        }
+        #show_reference:hover{
+            color: #2E2E2E;
+        }
+
+        #functioning_title{
+            width: 100%;
+            display: flex;
+            justify-content: start;
+            align-items: center;
+        }
+        #functioning_title > *{
+            display: inline-block;
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+    </style>
+    <!--Classes-->
+    <style>
+        #classes_section{
+            width: 100%;
+        }
+        hr{
+            height: 1px;
+            color: #2E2E2E;
+            background-color: #2E2E2E;
+            border: 1px solid #2E2E2E;
+            width: 60%;
+        }
+        .tag{
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            padding: 5px;
+            border-radius: 50px;
+            background-color: var(--primary-color);
+        }
+    </style>
+    <!--General-->
     <style>
         *{
             font-family: "Inter", sans-serif;
@@ -15,10 +260,14 @@
             font-style: normal;
             font-size: 16px;
             color: #2E2E2E;
+            text-align: justify;
 
             box-sizing: border-box;
             --primary-color: #B7FFC9;
             --dark-primary: #4A8057;
+        }
+        i{
+            height: 16px;
         }
         body{
             box-sizing: border-box;
@@ -50,7 +299,10 @@
 
         main{
             /* height: 600px; */
+            display: flex;
+            flex-direction: column;
             width: 400px;
+            min-height: 550px;
 
             margin-top: 8px;
 
@@ -59,6 +311,13 @@
             box-sizing: border-box;
 
             overflow: hidden;
+        }
+        #home_section{
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            flex-grow: 1;
         }
 
         #form-header{
@@ -111,46 +370,30 @@
             width: 24px;
         }
 
-        form{
-            display: flex;
-            gap: 16px;
-            flex-direction: column;
-            justify-content: center;
-
-            padding: 20px;
-        }
-
-        input, select{
-            appearance: none;
-            border: none;
-            border-radius: 8px;
-            padding: 15px;
-            padding-left: 20px;
-            padding-right: 20px;
-            background-color: white;
-            box-shadow: inset 0px 0px 5px 0px rgba(0,0,0,0.25);
-        }
-
-        input[type=submit]{
-            background-color: var(--primary-color);
-            box-shadow: none;
-        }
-        input[type=submit]:hover{
-            background-color: var(--primary-color);
-            box-shadow: inset 0px 0px 5px 0px rgba(0,0,0,0.25);
-        }
-
         .input_group{
             display: flex;
             gap: 8px;
             flex-direction: column;
             justify-content: center;
         }
+
+        #max_news_container{
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+        }
+
+        #max_news{
+            flex-grow: 1;
+        }
+        
     </style>
 </head>
 <body>
     <img id="logo" src="./assets/webs logo.svg" alt="">
-    <span>Clique para saber mais sobre o projeto</span>
+    <span id="show_reference" onclick="reference.showModal()">ⓘ Clique para saber mais sobre o projeto</span>
     <main>
         <div id="form-header">
             <div id="home_tab" class="icons_containers selected" onclick={switchTabs(0)}>
@@ -174,35 +417,215 @@
                 <span class="tab_title">Configurações</span>
             </div>
         </div>
-        <div>
-            <form action="POST">
-                <div class="input_group">
-                    <label for="tags">Palavras-Chave:</label>
-                    <input name="tags" type="text" placeholder="Digite as palavras-chave de busca">
+        <div id="home_section">
+            <form>
+                <div id="form_content">
+                    <div class="input_group">
+                        <label for="tags">Palavras-Chave</label>
+                        <input id="tags_selector" name="tags" type="text" placeholder="Digite as palavras-chave de busca" onkeydown="handleTagInput(event)">
+                        <div id="tags"></div>
+                    </div>
+                    <div class="input_group">
+                        <label for="media_outlet">Veículo de Notícia</label>
+                        <select name="media_outlet" id="media_outlet">
+                            <button>
+                                <selectedcontent> </selectedcontent>
+                                <i class="picker fi fi-rr-angle-down"></i>
+                            </button>
+                            <option value="_" disabled selected>
+                                <div class="custom-option">
+                                    <span class="option-text">Selecione sua fonte</span>
+                                </div>
+                            </option>
+                            <option value="nsc">
+                                <div class="custom-option">
+                                    <span class="indicator success"></span>
+                                    <span class="option-text">NSC</span>
+                                </div>
+                            </option>
+                            <option value="g1">
+                                <div class="custom-option">
+                                    <span class="indicator success"></span>
+                                    <span class="option-text">G1</span>
+                                </div>
+                            </option>
+                        </select>
+                    </div>
+                    <div class="input_group">
+                        <label for="class_group">Classificação</label>
+                        <select name="class_group" id="class_group">
+                            <option value="none" disabled selected>Selecione seu grupo de categorias</option>
+                        </select>
+                    </div>
+                    <div class="input_group">
+                        <label for="max_news">Número Máximo de Notícias</label>
+                        <div id="max_news_container">
+                            <label class="switch">
+                                <input id="max_news_switch" type="checkbox">
+                                <span class="slider"></span>
+                            </label>
+                            <input name="max_news" id="max_news" type="text" placeholder="Informe o número máximo de notícias">
+                        </div>
+                    </div>
                 </div>
-                <div class="input_group">
-                    <label for="tags">Veículo de Notícia</label>
-                    <select name="" id="">
-                        <option value="none" disabled selected>Selecione sua fonte</option>
-                    </select>
-                </div>
-                <div class="input_group">
-                    <label for="tags">Classificação</label>
-                    <select name="" id="">
-                        <option value="none" disabled selected>Selecione seu grupo de categorias</option>
-                    </select>
-                </div>
-                <div class="input_group">
-                    <label for="tags">Número Máximo de Notícias</label>
-                    <input type="text" placeholder="Informe o número máximo de notícias">
-                </div>
-                <input type="submit" value="Buscar">
+                <input id="submit" type="submit" value="Buscar">
             </form>
         </div>
+        <div id="classes_section" style="display: none;">
+            <form >
+                <div class="input_group">
+                    <label for="classes_select">Classificações</label>
+                    <select name="classes_select" id="classes_select" onchange="handleClassSelect()">
+                        <button>
+                            <selectedcontent> </selectedcontent>
+                            <i class="picker fi fi-rr-angle-down"></i>
+                        </button>
+                        <option value="_" disabled selected>
+                            <div class="custom-option">
+                                <span class="option-text">Selecione um grupo de categorias</span>
+                            </div>
+                        </option>
+                        <option value="nsc">
+                            <div class="custom-option">
+                                <span class="option-text">NSC</span>
+                            </div>
+                        </option>
+                        <option value="g1">
+                            <div class="custom-option">
+                                <span class="option-text">G1</span>
+                            </div>
+                        </option>
+                    </select>
+                </div>
+                <hr>
+                <div id="class_content">
+
+                </div>
+                <input id="classes_save" type="submit" value="Salvar">
+            </form>
+        </div>
+        <div id="settings_section" style="display: none;">
+
+        </div>
     </main>
+
+    <dialog id="reference">
+        <div id="dialog_content">
+            <img id="logo" src="./assets/webs logo.svg" alt="" style="scale: 0.8;">
+            <span>O buscador de notícias é uma ferramenta de web scraping que auxilia pesquisadores e 
+                jornalistas no levantamento de publicações feitas em portais catarinenses e nacionais. 
+                O buscador de notícias é um Produto Técnico e Tecnológico derivado da dissertação de Bianca Bertoli, 
+                do Mestrado Profissional em Clima e Ambiente do Instituto Federal de Santa Catarina (IFSC), sob orientação 
+                de Mário Francisco Leal de Quadro e Adriano Vitor. O desenvolvimento da ferramenta foi viabilizado com 
+                recursos do edital número 02/2024/PROPPI/UNIVERSAL do IFSC, através do bolsista Franco Valois de Luca.
+            </span>
+            <di id="functioning_title">
+                <i class="picker fi fi-rr-angle-small-right"></i>
+                <h2>Funcionamento</h2>
+            </div>
+            <div>imagens dos veiculos</div>
+            <div style="margin-bottom: 8px;">
+                Ao preencher os campos e determinar a(s) palavra(s)-chave(s) desejada(s), a tecnologia procura 
+                todas as reportagens divulgadas ao longo dos anos no veículo de notícias escolhido que contenham 
+                o(s) termo(s) nos títulos e conteúdos. Uma planilha com título, data e link é desenvolvida 
+                automaticamente, agilizando o processo de coleta de notícias. Em uma segunda etapa, o usuário 
+                conta com a Inteligência Artificial para classificar os conteúdos da forma que preferir.
+            </div>
+            <div>
+                No prompt original, o foco foi selecionar notícias sobre chuvas fortes e classificá-las 
+                entre “alerta/previsão do tempo”, “pós-desastre” e “outros”. Para usar essa opção 
+                (em estudos sobre desastres e eventos extremos meteorológicos), no momento da XXX 
+                (inserir nome da tela da classificação) selecione (XXX nome da opção de classificação do projeto mãe).
+            </div>
+            <div>imagem das classificacoes</div>
+        </div>
+    </dialog>
 </body>
 <script>
     let menu_tab = 0
+    let tags_list = ["chuva", "tempestade"]
+    let classes_groups = {
+        default: {
+            name:  "Padrão",
+            class_1: {
+                name: "",
+                description: ""
+            }
+        }
+    }
+
+    function readClasses(){
+        let classes_select = document.getElementById("classes_select")
+        classes_select.innerText = ""
+        classes_select.insertAdjacentHTML("beforeend", `
+                <option value="_" disabled selected>
+                    <div class="custom-option">
+                        <span class="option-text">Selecione um grupo de categorias</span>
+                    </div>
+                </option>
+            `)
+        for (const [key, value] of Object.entries(classes_groups)){
+            classes_select.insertAdjacentHTML("beforeend", `
+                <option value="${key}">
+                    <div class="custom-option">
+                        <span class="option-text">${value.name}</span>
+                    </div>
+                </option>
+            `)
+        }
+    }
+    readClasses()
+
+    function handleClassSelect(){
+        let content = document.getElementById("class_content")
+        let classes_select = document.getElementById("classes_select")
+        data = classes_groups[classes_select.value]
+
+        content.innerHTML = ""
+        content.insertAdjacentHTML("beforeend", `
+            <div class="input_group">
+                <label for="name">Nome</label>
+                <input id="class_name" name="class_name" type="text" placeholder="Nome do grupo de classificações" value="${data.name}">
+            </div>
+        `)
+    }
+
+    function writeTags(){
+        let tags = document.getElementById("tags")
+        console.log(tags_list)
+        tags.innerHTML = ""
+        tags.innerText = ""
+        tags_list.forEach((el,i) => {
+            tags.insertAdjacentHTML("beforeend", `
+            <div id="tag_${el}" class="tag">
+                ${el}
+                <i class="tag_del fi fi-rr-cross-small" onclick="delTag('${el}')"></i>
+            </div>
+            `)
+        })
+    }
+    function addTag(tag){
+        console.log(tag)
+        console.log(tags_list.includes(tag))
+        if(tags_list.includes(tag)) {return}
+        tags_list.push(tag)
+        writeTags()
+    }
+
+    function delTag(tag){
+        tags_list = tags_list.filter(item => item !== tag)
+        writeTags()
+    }
+
+    function handleTagInput(key) {
+        let tags_selector = document.getElementById("tags_selector")
+        if (key.code === 'Space' || key.code === 'Enter') {
+            // Your code here will run when the spacebar is pressed
+            addTag(tags_selector.value.trim())
+            writeTags()
+            tags_selector.value = ""
+        }
+    }
 
     function switchTabs(tab){
         let home_tab = document.getElementById("home_tab")
@@ -211,10 +634,18 @@
         let home_tab_text = document.getElementById("home_tab_text")
         let classes_tab_text = document.getElementById("classes_tab_text")
         let settings_tab_text = document.getElementById("settings_tab_text")
+
+        let home_section = document.getElementById("home_section")
+        let classes_section = document.getElementById("classes_section")
+        let settings_section = document.getElementById("settings_section")
+
         if (tab == 0){
             home_tab.classList.add("selected")
             classes_tab.classList.remove("selected")
             settings_tab.classList.remove("selected")
+            home_section.style.display = "inline-block"
+            classes_section.style.display = "none"
+            settings_section.style.display = "none"
             
             home_tab_text.classList.add("show")
             classes_tab_text.classList.remove("show")
@@ -223,6 +654,9 @@
             home_tab.classList.remove("selected")
             classes_tab.classList.add("selected")
             settings_tab.classList.remove("selected")
+            home_section.style.display = "none"
+            classes_section.style.display = "inline-block"
+            settings_section.style.display = "none"
             
             home_tab_text.classList.remove("show")
             classes_tab_text.classList.add("show")
@@ -231,11 +665,148 @@
             home_tab.classList.remove("selected")
             classes_tab.classList.remove("selected")
             settings_tab.classList.add("selected")
+            home_section.style.display = "none"
+            classes_section.style.display = "none"
+            settings_section.style.display = "inline-block"
             
             home_tab_text.classList.remove("show")
             classes_tab_text.classList.remove("show")
             settings_tab_text.classList.add("show")
         }
     }
+
+    // function fetch_news(path, method, requestData={}){
+    //     payload = {
+    //         method: method,
+    //         headers: {
+    //             'Content-Type': 'application/json'
+    //         },
+    //     }
+    //     if (method == "POST"){
+    //         payload["body"] = JSON.stringify(requestData)
+    //     }
+        
+    //     return fetch("http://127.0.0.1:5555"+path, payload)
+    //     .then(response => response.json())
+    //     .then(data => {
+    //         return data
+    //     })
+    //     .catch(error => {
+    //         console.error('Erro na requisição:', error);
+    //         // alert('Erro ao acessar API. Verifique se a API está rodando.');
+    //         return {"status": "error"}
+    //     });
+    // }
+    
+    // checkDownload = 0
+    // function CheckDownload(){
+    //     if (document.getElementById('downloadBtn').checkVisibility()) {
+    //         clearInterval(checkDownload)
+    //         return 
+    //     }
+
+    //     fetch_news("/finished", "GET").then((r) => {
+    //         if (r){
+    //             document.getElementById('downloadBtn').style.display = "inline-block";
+    //         }
+    //     })
+    // }
+
+    // function mostrarDownload(event) {
+    //     event.preventDefault();
+        
+    //     document.getElementById('downloadBtn').style.display = "none";
+
+    //     const palavra = document.getElementById('palavra').value;
+    //     const fonte = document.getElementById('fonte').value;
+    //     const quantidade = document.getElementById('quantidade').value;
+        
+    //     console.log("Palavra-chave:", palavra);
+    //     console.log("Fonte:", fonte);
+    //     console.log("Número máximo de notícias:", quantidade);
+
+    //     const requestData = {
+    //         keyword: palavra,
+    //         fonte: fonte,
+    //         max_news: parseInt(quantidade)
+    //     };
+
+
+    //     fetch_news("", "POST", requestData).then((r) => {
+    //         console.log("Resposta da API:", r)
+    //     })
+
+    //     checkDownload = setInterval(CheckDownload, 1000)
+        
+    // }
+    
+    // setInterval(() => {
+    //     fetch_news("/busy", "GET").then((r) =>{
+    //         currentText = document.getElementById("search").textContent
+    //         if (r) {
+    //             document.getElementById("search").textContent = currentText == "Loading." ? "Loading.." : currentText == "Loading.."? "Loading..." :currentText == "Loading..."? "Loading." : "Loading."  
+    //         }else if (currentText != "Buscar"){
+    //             document.getElementById("search").textContent = "Buscar"
+    //         }
+    //     })
+            
+    // }, 500)
+
+    // function baixarArquivo() {
+    //     // Faz requisição para a API para obter o arquivo
+    //     fetch("http://127.0.0.1:5555/file")
+    //     .then(response => {
+    //         if (!response.ok) {
+    //             throw new Error('Erro ao baixar arquivo da API');
+    //         }
+    //         return response.blob();
+    //     })
+    //     .then(blob => {
+    //         const link = document.createElement('a');
+    //         link.href = URL.createObjectURL(blob);
+    //         link.download = 'resultados.xlsx';
+    //         document.body.appendChild(link);
+    //         link.click();
+    //         document.body.removeChild(link);
+    //     })
+    //     .catch(error => {
+    //         console.error('Erro ao baixar arquivo:', error);
+    //         // alert('Erro ao baixar arquivo. Verifique se a API está rodando.');
+    //     });
+    // }
+
+    // window.onload = function() {
+    //     document.getElementById('downloadBtn').addEventListener('click', baixarArquivo);
+    // }
+</script>
+<!--Close Modal in bakdrop-->
+<script>
+    document
+	.getElementById('reference')
+  .addEventListener(
+  	'click',
+    ((event) => {
+      let rect = event.target.getBoundingClientRect();
+      
+      console.log(
+                  `
+                  ClientX: ${event.clientX}
+                  rect.left: ${rect.left}
+                  rect.right: ${rect.right}
+
+                  ClientY: ${event.clientY}
+                  rect.top: ${rect.left}
+                  rect.bottom: ${rect.bottom}
+                  `
+                 );
+    	if (rect.left > event.clientX ||
+          rect.right < event.clientX ||
+          rect.top > event.clientY ||
+          rect.bottom < event.clientY
+      ) {
+          reference.close();
+      }
+    })
+  );
 </script>
 </html>
