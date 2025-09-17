@@ -4,6 +4,7 @@ from tqdm  import tqdm
 import pandas as pd
 import time
 import sys
+from fake_useragent import UserAgent
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
@@ -31,6 +32,8 @@ options.add_argument('--ignore-ssl-errors')
 
 options.page_load_strategy = 'eager'
 
+options.add_argument(f'user-agent={UserAgent().random}')
+
 driver = webdriver.Chrome(service=driverpath, options=options)
 
 def articleFormatter(article, tag, progress_bar=None): 
@@ -47,8 +50,6 @@ def remove_duplicates(news):
     for article in news:
         normalized_articles[article["link"]] = article
     return normalized_articles.values()
-
-# FINISH ARTICLE FORMATTER
 
 Verbose = False
 
