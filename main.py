@@ -68,9 +68,9 @@ def get_busy():
     return Busy
 
 script_table = {
-    "G1": "G1.py",
-    "nd+": "NDmais.py",
-    "nsc": "NSC.py"
+    "G1": "G1.exe",
+    "nd+": "NDmais.exe",
+    "nsc": "NSC.exe"
 }
 
 @app.post("/")
