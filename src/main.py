@@ -87,7 +87,7 @@ async def search_news(request: NewsRequest):
     print()
     Busy = True
 
-    os.system(f"start ../buscadores{script_table[request.fonte]}.exe 0 {int(request.max_news)} {request.keyword}")
+    os.system(f"start ./buscadores/{script_table[request.fonte]}.exe 0 {int(request.max_news)} {request.keyword}")
 
     return {
         "status": "success",

@@ -63,9 +63,9 @@ if __name__ == '__main__':
 
     options = webdriver.ChromeOptions()
 
-    options.binary_location = "./brave/brave.exe"
+    options.binary_location = "../brave/brave.exe"
 
-    driverpath = Service("./chromedriver/chromedriver-win64/chromedriver.exe")
+    driverpath = Service("../chromedriver/chromedriver-win64/chromedriver.exe")
 
     options.add_argument('--headless=new')
     options.add_argument('--no-sandbox')
