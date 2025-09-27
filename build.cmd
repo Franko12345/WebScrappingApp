@@ -1,6 +1,4 @@
-pyinstaller --windowed --onefile main.py
-pyinstaller --windowed --onefile NSC.py
-pyinstaller --windowed --onefile NDmais.py
-move ./dist/NDmais/NDmais.exe ./
-move ./dist/NSC/NSC.exe ./
-move ./dist/main.exe ./
+set PYTHONOPTIMIZE=2 && pyinstaller --windowed --onefile --distpath=./ --workpath=./build ./src/main.py
+set PYTHONOPTIMIZE=2 && pyinstaller --onefile --distpath=./buscadores --workpath=./build ./src/NSC.py
+set PYTHONOPTIMIZE=2 && pyinstaller --onefile --distpath=./buscadores --workpath=./build ./src/NDmais.py
+set PYTHONOPTIMIZE=2 && pyinstaller --onefile --distpath=./buscadores --workpath=./build ./src/g1.py
