@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de Notícias</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #b3d9ff; /* azul bebê */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: #ffffff;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #0066cc;
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #004080;
+            font-weight: bold;
+        }
+
+        input, select, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 1rem;
+            border: 1px solid #80bfff;
+            border-radius: 8px;
+            font-size: 1rem;
+        }
+
+        button {
+            background-color: #66b3ff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #3399ff;
+        }
+
+        #downloadBtn {
+            display: none;
+            background-color: #4da6ff;
+        }
+
+        #downloadBtn.show {
+            display: block;
+        }
+
+        @media (max-width: 500px) {
+            .container {
+                padding: 1rem;
+            }
+        }
+    </style>
+    <script>
+        
+        function fetch_news(path, method, requestData={}){
+            payload = {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            }
+            if (method == "POST"){
+                payload["body"] = JSON.stringify(requestData)
+            }
+            
+            return fetch("http://127.0.0.1:5555"+path, payload)
+            .then(response => response.json())
+            .then(data => {
+                return data
+            })
+            .catch(error => {
+                console.error('Erro na requisição:', error);
+                // alert('Erro ao acessar API. Verifique se a API está rodando.');
+                return {"status": "error"}
+            });
+        }
+        
+        checkDownload = 0
+        function CheckDownload(){
+            if (document.getElementById('downloadBtn').checkVisibility()) {
+                clearInterval(checkDownload)
+                return 
+            }
+
+            fetch_news("/finished", "GET").then((r) => {
+                if (r){
+                    document.getElementById('downloadBtn').style.display = "inline-block";
+                }
+            })
+        }
+
+        function mostrarDownload(event) {
+            event.preventDefault();
+            
+            document.getElementById('downloadBtn').style.display = "none";
+
+            const palavra = document.getElementById('palavra').value;
+            const fonte = document.getElementById('fonte').value;
+            const quantidade = document.getElementById('quantidade').value;
+            
+            console.log("Palavra-chave:", palavra);
+            console.log("Fonte:", fonte);
+            console.log("Número máximo de notícias:", quantidade);
+
+            const requestData = {
+                keyword: palavra,
+                fonte: fonte,
+                max_news: parseInt(quantidade)
+            };
+
+
+            fetch_news("", "POST", requestData).then((r) => {
+                console.log("Resposta da API:", r)
+            })
+
+            checkDownload = setInterval(CheckDownload, 1000)
+            
+        }
+        
+        setInterval(() => {
+            fetch_news("/busy", "GET").then((r) =>{
+                currentText = document.getElementById("search").textContent
+                if (r) {
+                    document.getElementById("search").textContent = currentText == "Loading." ? "Loading.." : currentText == "Loading.."? "Loading..." :currentText == "Loading..."? "Loading." : "Loading."  
+                }else if (currentText != "Buscar"){
+                    document.getElementById("search").textContent = "Buscar"
+                }
+            })
+                
+        }, 500)
+
+        function baixarArquivo() {
+            // Faz requisição para a API para obter o arquivo
+            fetch("http://127.0.0.1:5555/file")
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Erro ao baixar arquivo da API');
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'resultados.xlsx';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            })
+            .catch(error => {
+                console.error('Erro ao baixar arquivo:', error);
+                // alert('Erro ao baixar arquivo. Verifique se a API está rodando.');
+            });
+        }
+
+        window.onload = function() {
+            document.getElementById('downloadBtn').addEventListener('click', baixarArquivo);
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Buscador de Notícias</h1>
+        <form onsubmit="mostrarDownload(event)">
+            <label for="palavra">Palavra-chave:</label>
+            <input type="text" id="palavra" name="palavra" placeholder="Digite uma palavra..." required>
+
+            <label for="fonte">Fonte de Notícias:</label>
+            <select id="fonte" name="fonte">
+                <option value="nd+">ND+</option>
+                <option value="g1">G1</option>
+                <option value="nsc">NSC</option>
+            </select>
+
+            <label for="quantidade">Número máximo de notícias:</label>
+            <input type="number" id="quantidade" name="quantidade" min="1" max="100" value="10">
+
+            <button type="submit" id="search">Buscar</button>
+        </form>
+        <button id="downloadBtn">Baixar Resultados</button>
+    </div>
+</body>
+</html>
