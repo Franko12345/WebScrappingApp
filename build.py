@@ -106,6 +106,22 @@ def build_if_newer(
         print(f"[ERRO] PyInstaller não gerou o arquivo esperado em: {output_file}")
 
 if __name__ == "__main__":
+    relative_path = "./brave/brave.exe"
+    absolute_path = os.path.abspath(relative_path)
+
+    print(absolute_path)  # e.g., C:\Users\Davi\project\brave\brave.exe
+
+    # Set environment variable permanently (user-level)
+    os.system(f'setx BRAVE_PATH "{absolute_path}"')
+
+    relative_path = "./chromedriver/chromedriver-win64/chromedriver.exe"
+    absolute_path = os.path.abspath(relative_path)
+
+    print(absolute_path)  # e.g., C:\Users\Davi\project\brave\brave.exe
+
+    # Set environment variable permanently (user-level)
+    os.system(f'setx CHROMEDRIVER_PATH "{absolute_path}"')
+    
     # Lista de builds baseada nos comandos que você forneceu
     builds = [
         {
@@ -121,6 +137,7 @@ if __name__ == "__main__":
             "work": "./build",
             "windowed": False,
             "extra": None,
+            "binaries": [("./brave/brave.exe", ".")]
         },
         {
             "script": "./src/NDmais.py",

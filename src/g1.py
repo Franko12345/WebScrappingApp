@@ -4,6 +4,7 @@ from tqdm  import tqdm
 import pandas as pd
 import time
 import sys
+import os
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
@@ -63,9 +64,12 @@ if __name__ == '__main__':
 
     options = webdriver.ChromeOptions()
 
-    options.binary_location = "../brave/brave.exe"
 
-    driverpath = Service("../chromedriver/chromedriver-win64/chromedriver.exe")
+    brave_path = os.environ.get("BRAVE_PATH")
+    options.binary_location = str(brave_path)
+
+    driver_path = os.environ.get("CHROMEDRIVER_PATH")
+    driverpath = Service(driver_path)
 
     options.add_argument('--headless=new')
     options.add_argument('--no-sandbox')

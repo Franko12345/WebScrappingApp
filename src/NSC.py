@@ -10,9 +10,15 @@ from selenium.webdriver.chrome.service import Service
 
 options = webdriver.ChromeOptions()
 
-options.binary_location = "../brave/brave.exe"
+import os
 
-driverpath = Service("../chromedriver/chromedriver-win64/chromedriver.exe")
+brave_path = os.environ.get("BRAVE_PATH")
+options.binary_location = str(brave_path)
+
+driver_path = os.environ.get("CHROMEDRIVER_PATH")
+driverpath = Service(driver_path)
+# driverpath = Service()
+
 
 options.add_argument('--headless=new')
 options.add_argument('--no-sandbox')
@@ -25,7 +31,7 @@ options.add_argument('--disable-notifications')
 
 options.page_load_strategy = 'eager'
 
-driver = webdriver.Chrome(service=driverpath, options=options)
+driver = webdriver.Chrome(options=options)
 
 def articleFormatter(article, tag): 
     return {

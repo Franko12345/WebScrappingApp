@@ -3,6 +3,7 @@ from selenium import webdriver
 from tqdm  import tqdm
 import pandas as pd
 import time
+import os
 import sys
 from fake_useragent import UserAgent
 
@@ -14,9 +15,11 @@ from selenium.webdriver.common.action_chains import ActionChains
 
 options = webdriver.ChromeOptions()
 
-options.binary_location = "./brave/brave.exe"
+brave_path = os.environ.get("BRAVE_PATH")
+options.binary_location = str(brave_path)
 
-driverpath = Service("./chromedriver/chromedriver-win64/chromedriver.exe")
+driver_path = os.environ.get("CHROMEDRIVER_PATH")
+driverpath = Service(driver_path)
 
 # options.add_argument('--headless=new')
 options.add_argument('--no-sandbox')
