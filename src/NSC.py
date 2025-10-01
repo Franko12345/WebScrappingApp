@@ -11,6 +11,7 @@ from selenium.webdriver.chrome.service import Service
 options = webdriver.ChromeOptions()
 
 import os
+from pathlib import Path
 
 brave_path = os.environ.get("BRAVE_PATH")
 options.binary_location = str(brave_path)
@@ -103,10 +104,14 @@ def storeAsExcel(data, final=False):
     
     print(f"Número de noticias sem duplicados: {len(df)}")
     
-    if not final:
-        df.to_excel("./backup/result.xlsx", index=False)
-    else:
-        df.to_excel("./result/result.xlsx", index=False)
+    folder = Path("./backup") if not final else Path("./result")
+
+    # Create the folder if it doesn't exist
+    folder.mkdir(parents=True, exist_ok=True)
+
+    # Save the Excel file
+    file_path = folder / ("result.xlsx")
+    df.to_excel(file_path, index=False)
             
 
 searchReference = sys.argv[3:]

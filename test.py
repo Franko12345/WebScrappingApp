@@ -8,6 +8,8 @@ from pathlib import Path
 import pythoncom
 import win32com.client
 from win32com.shell import shell, shellcon
+import zipfile
+import urllib.request
 
 REPO_URL = "https://github.com/Franko12345/WebScrappingApp.git"
 INSTALL_DIR = Path(os.environ["ProgramFiles"]) / "WebScrappingApp"
@@ -118,6 +120,39 @@ def install_requirements():
     else:
         print("⚠️ No requirements.txt found. Skipping package installation.")
 
+BRAVE_DIR = INSTALL_DIR / "brave"
+BRAVE_ZIP_URL = "https://github.com/brave/brave-browser/releases/download/v1.76.82/brave-v1.76.82-win32-x64.zip"
+BRAVE_ZIP_PATH = BRAVE_DIR / "brave.zip"
+
+def download_and_extract_brave():
+    if BRAVE_DIR.exists():
+        print(f"✅ Brave already installed at {BRAVE_DIR}")
+        return
+    
+    brave_folder = Path(BRAVE_DIR)
+    brave_folder.mkdir(parents=True, exist_ok=True)
+
+    print("⬇️ Downloading Brave browser...")
+    urllib.request.urlretrieve(BRAVE_ZIP_URL, BRAVE_ZIP_PATH)
+    print(f"📥 Downloaded to {BRAVE_ZIP_PATH}")
+
+    print("⚙️ Extracting Brave...")
+    with zipfile.ZipFile(BRAVE_ZIP_PATH, 'r') as zip_ref:
+        zip_ref.extractall(BRAVE_DIR)
+
+    # Remove the zip
+    BRAVE_ZIP_PATH.unlink()
+
+    # The zip may extract a folder with version name, rename it to 'brave'
+    # Find first folder that starts with "brave"
+    extracted_folders = [f for f in INSTALL_DIR.iterdir() if f.is_dir() and f.name.lower().startswith("brave")]
+    if extracted_folders:
+        extracted_folder = extracted_folders[0]
+        extracted_folder.rename(BRAVE_DIR)
+        print(f"✅ Brave installed at {BRAVE_DIR}")
+    else:
+        print("❌ Could not find extracted Brave folder")
+
 def clone_repo():
     if INSTALL_DIR.exists():
         print("♻️ Removing old installation...")
@@ -165,6 +200,22 @@ def main():
 
     clone_repo()
     install_requirements()
+
+    download_and_extract_brave()
+
+    brave_path = INSTALL_DIR / "brave/brave.exe"
+
+    print(brave_path) 
+
+    # Set environment variable permanently (user-level)
+    os.system(f'setx BRAVE_PATH "{brave_path}"')
+
+    driver_path = INSTALL_DIR / "chromedriver/chromedriver-win64/chromedriver.exe"
+
+    print(driver_path)
+
+    # Set environment variable permanently (user-level)
+    os.system(f'setx CHROMEDRIVER_PATH "{driver_path}"')
 
     exe_path = INSTALL_DIR / "main.exe"
     if not exe_path.exists():
