@@ -39,6 +39,7 @@ def build_if_newer(
     script_path: str,
     dist_path: str,
     work_path: str,
+    icon: str,
     windowed: bool = False,
     optimize: int = 2,
     extra_args: list[str] | None = None,
@@ -74,6 +75,7 @@ def build_if_newer(
         f"--distpath={dist_path}",
         f"--workpath={work_path}",
         "--noconfirm",  # sobrescrever sem pedir confirmação
+        f"--icon={icon}"
     ]
     if windowed:
         args.append("--windowed")
@@ -130,6 +132,7 @@ if __name__ == "__main__":
             "work": "./build",
             "windowed": True,
             "extra": None,
+            "icon": "./assets/app_ico.ico"
         },
         {
             "script": "./src/NSC.py",
@@ -137,7 +140,8 @@ if __name__ == "__main__":
             "work": "./build",
             "windowed": False,
             "extra": None,
-            "binaries": [("./brave/brave.exe", ".")]
+            "binaries": [("./brave/brave.exe", ".")],
+            "icon": "./assets/buscador.ico"
         },
         {
             "script": "./src/NDmais.py",
@@ -145,6 +149,7 @@ if __name__ == "__main__":
             "work": "./build",
             "windowed": False,
             "extra": None,
+            "icon": "./assets/buscador.ico"
         },
         {
             "script": "./src/g1.py",
@@ -152,6 +157,7 @@ if __name__ == "__main__":
             "work": "./build",
             "windowed": False,
             "extra": None,
+            "icon": "./assets/buscador.ico"
         },
     ]
 
@@ -165,6 +171,7 @@ if __name__ == "__main__":
                 windowed=b["windowed"],
                 optimize=2,
                 extra_args=b["extra"],
+                icon=b["icon"],
             )
         except Exception as e:
             print(f"[ERRO] Falha ao construir {b['script']}: {e}")

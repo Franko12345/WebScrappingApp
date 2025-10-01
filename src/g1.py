@@ -112,3 +112,4 @@ if __name__ == '__main__':
     
     # Salvando o DataFrame em um arquivo Excel
     print("Raspagem de dados finalizada")
+
