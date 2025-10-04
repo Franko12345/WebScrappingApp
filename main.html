@@ -8,6 +8,103 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
     <link href="https://cdn-uicons.flaticon.com/uicons-regular-rounded/css/uicons-regular-rounded.css" rel="stylesheet">
     <title>Document</title>
+    <!-- Functionality Slidehsow -->
+     <style>
+        #info{
+            padding-right: 10px;
+            padding-left: 10px;
+            background: #fff;
+        }
+
+        /* Modal content */
+        .modal-content {
+        position: relative;
+        background: #fff;
+        border-radius: 16px;
+        overflow: hidden;
+        }
+
+        /* Slides */
+        .slide {
+        display: none;
+        width: 100%;
+        }
+
+        .slide img {
+        width: 100%;
+        display: block;
+        border-radius: 0;
+        }
+
+        /* Caption */
+        .caption {
+        text-align: center;
+        padding: 10px;
+        background: #B7FFC9;
+        font-weight: bold;
+        }
+
+        /* Navigation buttons */
+        .prev, .next {
+        display: flex;
+        cursor: pointer;
+        position: absolute;
+        top: 50%;
+        width: auto;
+        margin-top: -22px;
+        padding: 12px;
+        color: #333;
+        font-weight: bold;
+        font-size: 24px;
+        border-radius: 0 3px 3px 0;
+        background: rgba(255,255,255,0.8);
+        user-select: none;
+        transition: 0.3s;
+        }
+        .next {
+        right: 0;
+        border-radius: 3px 0 0 3px;
+        }
+        .prev:hover, .next:hover {
+            background-color: var(--primary-color);
+            opacity: 0.8;
+            border-radius: 5px;
+        }
+
+        /* Close button */
+        .close {
+        color: #333;
+        position: absolute;
+        top: 10px;
+        right: 20px;
+        font-size: 30px;
+        font-weight: bold;
+        cursor: pointer;
+        z-index: 1001;
+        }
+        .close:hover {
+        color: red;
+        }
+
+        /* Dots */
+        .dots {
+        text-align: center;
+        padding: 10px 0;
+        }
+        .dot {
+        cursor: pointer;
+        height: 12px;
+        width: 12px;
+        margin: 0 4px;
+        background-color: #ccc;
+        border-radius: 50%;
+        display: inline-block;
+        transition: 0.3s;
+        }
+        .active, .dot:hover {
+        background-color: #B7FFC9;
+        }
+     </style>
     <style>
         /* From Uiverse.io by eslam-hany */ 
         .card {
@@ -705,7 +802,7 @@
                 <span class="tab_title">Editar Categorias</span>
             </div>
 
-            <div id="info_tab" class="icons_containers" onclick="info.showModal()">
+            <div id="info_tab" class="icons_containers" onclick="info.showModal(); showSlides(slideIndex)">
                 <!-- <img class="icons" src="./assets/info.svg" alt=""> -->
                 <svg class="icons" xmlns="http://www.w3.org/2000/svg" id="Outline" viewBox="0 0 24 24" width="512"><path d="M12,0A12,12,0,1,0,24,12,12.013,12.013,0,0,0,12,0Zm0,22A10,10,0,1,1,22,12,10.011,10.011,0,0,1,12,22Z"/><path d="M12,10H11a1,1,0,0,0,0,2h1v6a1,1,0,0,0,2,0V12A2,2,0,0,0,12,10Z"/><circle cx="12" cy="6.5" r="1.5"/></svg>
             </div>
@@ -1180,11 +1277,48 @@
         </div>
     </dialog>
     <dialog id="info">
-        <div style="display: flex; justify-content: center; align-items: center;">
+        <div class="modal-content">
             <!-- <button id="downloadBtn">Baixar Resultados</button> -->
-             <div class="card">Termino amanhã☠️</div>
+             <!-- <div class="card">Termino amanhã☠️</div> -->
+            <div class="slide">
+                <img src="assets/Slide 1.png" alt="Step 1">
+                <div class="caption">Passo 1: Preenchendo o Formulário de Busca</div>
+            </div>
+
+            <div class="slide">
+                <img src="assets/Slide 2.png" alt="Step 2">
+                <div class="caption">Passo 2: Baixando os Resultados</div>
+            </div>
+
+            <div class="slide">
+                <img src="assets/Slide 3.png" alt="Step 3">
+                <div class="caption">Passo 3: Criando Grupos de Categorias</div>
+            </div>
+
+            <div class="slide">
+                <img src="assets/Slide 4.png" alt="Step 4">
+                <div class="caption">Passo 4: Usando Grupos Customizados</div>
+            </div>
+
+            <!-- Navigation -->
+            <a class="prev" onclick="plusSlides(-1)">
+                <svg class="icons" xmlns="http://www.w3.org/2000/svg" id="Outline" viewBox="0 0 24 24" width="512"><path d="M17.17,24a1,1,0,0,1-.71-.29L8.29,15.54a5,5,0,0,1,0-7.08L16.46.29a1,1,0,1,1,1.42,1.42L9.71,9.88a3,3,0,0,0,0,4.24l8.17,8.17a1,1,0,0,1,0,1.42A1,1,0,0,1,17.17,24Z"/></svg>
+            </a>
+            <a class="next" onclick="plusSlides(1)">
+                <svg class="icons" xmlns="http://www.w3.org/2000/svg" id="Outline" viewBox="0 0 24 24" width="512"><path d="M7,24a1,1,0,0,1-.71-.29,1,1,0,0,1,0-1.42l8.17-8.17a3,3,0,0,0,0-4.24L6.29,1.71A1,1,0,0,1,7.71.29l8.17,8.17a5,5,0,0,1,0,7.08L7.71,23.71A1,1,0,0,1,7,24Z"/></svg>
+            </a>
+
+            <!-- Dots -->
+            <div class="dots">
+                <span class="dot" onclick="currentSlide(1)"></span>
+                <span class="dot" onclick="currentSlide(2)"></span>
+                <span class="dot" onclick="currentSlide(3)"></span>
+                <span class="dot" onclick="currentSlide(4)"></span>
+            </div>
         </div>
     </dialog>
+
+    <!-- Notifications -->
     <div id="notification" class="notification">Saved successfully!</div>
 </body>
 <script>
@@ -1678,5 +1812,41 @@
         maxNewsInput.value = "50"; // clear when disabled (optional)
       }
     });
+</script>
+<!-- Slideshow -->
+ <script>
+let slideIndex = 1;
+
+function openModal() {
+  document.getElementById("tutorialModal").style.display = "block";
+  showSlides(slideIndex);
+}
+
+function closeModal() {
+  document.getElementById("tutorialModal").style.display = "none";
+}
+
+function plusSlides(n) {
+  showSlides(slideIndex += n);
+}
+
+function currentSlide(n) {
+  showSlides(slideIndex = n);
+}
+
+function showSlides(n) {
+  const slides = document.getElementsByClassName("slide");
+  const dots = document.getElementsByClassName("dot");
+  if (n > slides.length) { slideIndex = 1 }
+  if (n < 1) { slideIndex = slides.length }
+  for (let i = 0; i < slides.length; i++) {
+    slides[i].style.display = "none";
+  }
+  for (let i = 0; i < dots.length; i++) {
+    dots[i].className = dots[i].className.replace(" active", "");
+  }
+  slides[slideIndex-1].style.display = "block";
+  dots[slideIndex-1].className += " active";
+}
 </script>
 </html>

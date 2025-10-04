@@ -11,7 +11,7 @@ from win32com.shell import shell, shellcon
 import zipfile
 import urllib.request
 
-REPO_URL = "https://github.com/Franko12345/Yast.git"
+REPO_URL = "https://github.com/Franko12345/WebScrappingApp.git"
 INSTALL_DIR = Path(os.environ["ProgramFiles"]) / "Yast"
 GIT_INSTALLER_URL = "https://github.com/git-for-windows/git/releases/download/v2.45.2.windows.1/Git-2.45.2-64-bit.exe"
 GIT_INSTALLER_PATH = Path(os.environ["TEMP"]) / "git-installer.exe"

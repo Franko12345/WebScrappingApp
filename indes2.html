@@ -1,279 +1,188 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <style>
-        @import "https://unpkg.com/open-props" layer(design.system);
-@import "https://unpkg.com/open-props/normalize.min.css" layer(demo.support);
-@import "https://unpkg.com/open-props/buttons.min.css" layer(demo.support);
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tutorial Slideshow Modal</title>
+<style>
+/* Modal background */
+.modal {
+  display: none; 
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: rgba(0,0,0,0.8);
+}
 
-/*  
-  TODO:
-    - large excellent mobile design
-    - excellent tablet design
-    - fix arrow not rotating when open (regression)
-    - add directional aware entry/exit transitions
-*/
-
-
-select {
-  /* opt into customizing select */
-  &, &::picker(select) {
-    appearance: base-select;
-  }
-  
-  font-size: var(--font-size-1);
-  
-  /* removing open props normalize styles */
-  background: none;
+/* Modal content */
+.modal-content {
+  position: relative;
+  margin: 5% auto;
   padding: 0;
-  
-  /* enable transitions in the drop down */
-  &::picker(select) {
-    transition: 
-      opacity .2s ease,
-      transform .2s var(--ease-out-3), 
-      display .2s allow-discrete, 
-      overlay .2s allow-discrete
-    ;
-  }
-  
-  &::picker-icon {
-    display: none;
-  }
-  
-  /* set the off stage styles */
-  &:not(:open)::picker(select) {
-    opacity: 0;
-    transform: scale(.95);
-  }
-  
-  /* set the on stage styles */
-  &:open::picker(select) {
-    opacity: 1;
-    transform: scale(1);
-  }
-  
-  /* transition the selected option changing */
-  selectedcontent > * {
-    transition: 
-      transform 1s var(--ease-spring-4),
-      display 1s allow-discrete, 
-      opacity 1s;
-    
-    @starting-style {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    opacity: 1;
-  }
-  
-  /* customize the invoking button */
-  > button {
-    --_text: var(--text-1);
-  
-    &:focus-visible {
-      outline-offset: -3px;
-    }
-
-    &:has(selectedcontent) {
-      align-items: start;
-      min-inline-size: 20ch;
-      flex-direction: column;
-    }
-    
-    &.primary {
-      --_bg: var(--link);
-      --_border: none;
-      --_text: var(--surface-1);
-      --_ink-shadow: none;
-    }
-
-    > div {
-      inline-size: 100%;
-      display: flex;
-      justify-content: space-between;
-      gap: var(--size-3);
-    }
-
-    & > small {
-      color: var(--text-2);
-    }
-
-    & svg {
-      inline-size: 2ch;
-      transition: transform .3s var(--ease-elastic-out-2);
-    }
-  }
-  
-  &:open > button svg {
-    transform: rotate(.5turn);
-  }
-  
-  /* reset some picker styles */
-  &::picker(select) {
-    background: light-dark(white, var(--surface-2));
-    border-radius: var(--radius-2);
-    padding: 0;
-    margin-block: 5px;
-    box-shadow: var(--shadow-5);
-    
-    @media (forced-colors: none) {
-      border: none;
-    }
-  }
-  
-  /* customize the picker contents */
-  > div {
-    min-inline-size: calc(anchor-size(self-inline) + 20px);
-    scroll-behavior: smooth;
-    
-    &.scrollable {
-      max-block-size: 20lh;
-      scrollbar-width: thin;
-    }
-
-    & hr {
-      margin-block: var(--size-2);
-    }
-
-    & label {
-      display: block;
-      position: sticky;
-      top: 0;
-      z-index: 1;
-      background: var(--surface-3);
-      font-size: var(--font-size-0);
-      color: var(--text-2);
-      font-weight: var(--font-weight-7);
-      padding-block: var(--size-1);
-      padding-inline: var(--size-3);
-    }
-
-    & option {
-      display: flex;
-      align-items: center;
-      gap: var(--size-3);
-      padding-block: var(--size-2);
-      padding-inline: var(--size-3);
-      font-size: var(--font-size-1);
-
-      cursor: pointer;
-      outline-offset: -1px;
-      
-      &::checkmark {
-        font-weight: var(--font-weight-8);
-      }
-
-      &:focus-visible {
-        outline-offset: -1px;
-      }
-
-      &:is(:focus, :hover) {
-        background: oklch(from var(--link) l c h / 25%);
-        color: inherit;
-      }
-
-      &:is(:checked) {
-        background: var(--link);
-        color: var(--surface-1);
-        font-weight: var(--font-weight-8);
-      }
-    }
-  }
+  width: 80%;
+  max-width: 800px;
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
 
-/* utilities to aid in custom select children */
-.custom-option {
-  display: flex;
-  gap: var(--size-3);
-  align-items: center;
-  justify-content: space-between;
-
-  .primary & {
-    display: grid;
-    gap: var(--size-1);
-  }
-
-  &:has(.description) {
-    display: grid;
-    justify-items: start;
-    gap: var(--size-2);
-    padding-block: var(--size-2);
-    text-shadow: none;
-
-    & .description {
-      color: var(--text-2);
-    }
-  }
-
-  option:is(:checked) & .description {
-    font-weight: normal;
-    color: var(--surface-2);
-  }
-
-  selectedcontent & .description {
-    display: none;
-  }
+/* Slides */
+.slide {
+  display: none;
+  width: 100%;
 }
 
-.indicator {
+.slide img {
+  width: 100%;
+  display: block;
+  border-radius: 0;
+}
+
+/* Caption */
+.caption {
+  text-align: center;
+  padding: 10px;
+  background: #B7FFC9;
+  font-weight: bold;
+}
+
+/* Navigation buttons */
+.prev, .next {
+  cursor: pointer;
+  position: absolute;
+  top: 50%;
+  width: auto;
+  margin-top: -22px;
+  padding: 16px;
+  color: #333;
+  font-weight: bold;
+  font-size: 24px;
+  border-radius: 0 3px 3px 0;
+  background: rgba(255,255,255,0.8);
+  user-select: none;
+  transition: 0.3s;
+}
+.next {
+  right: 0;
+  border-radius: 3px 0 0 3px;
+}
+.prev:hover, .next:hover {
+  background-color: #B7FFC9;
+}
+
+/* Close button */
+.close {
+  color: #333;
+  position: absolute;
+  top: 10px;
+  right: 20px;
+  font-size: 30px;
+  font-weight: bold;
+  cursor: pointer;
+  z-index: 1001;
+}
+.close:hover {
+  color: red;
+}
+
+/* Dots */
+.dots {
+  text-align: center;
+  padding: 10px 0;
+}
+.dot {
+  cursor: pointer;
+  height: 12px;
+  width: 12px;
+  margin: 0 4px;
+  background-color: #ccc;
+  border-radius: 50%;
   display: inline-block;
-  block-size: var(--size-2);
-  inline-size: var(--size-2);
-  border-radius: var(--radius-round);
-  background: var(--gray-5);
-
-  &.success {
-    background: var(--green-5);
-  }
-
-  &.danger {
-    background: var(--red-5);
-  }
+  transition: 0.3s;
 }
-
-.option-text {
-  flex: 2;
+.active, .dot:hover {
+  background-color: #B7FFC9;
 }
-
-
-
-    </style>
+</style>
 </head>
 <body>
-    <select>
-  <button>
-    <div>
-      <selectedcontent> </selectedcontent>
-      <svg width="24" height="24" viewBox="0 0 24 24">
-        <path fill="currentColor" d="m7 10l5 5l5-5z"/>
-      </svg>
+
+<!-- Trigger button -->
+<button onclick="openModal()">Open Tutorial</button>
+
+<!-- Modal -->
+<div id="tutorialModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">&times;</span>
+
+    <div class="slide">
+      <img src="img1.png" alt="Step 1">
+      <div class="caption">Step 1: Go to the homepage</div>
     </div>
-  </button>
-  <div>
-    <option value="on">
-      <!-- custom so it's fully consumed for selectedcontent -->
-      <div class="custom-option">
-        <span class="indicator success"></span>
-        <span class="option-text">On</span>
-      </div>
-    </option>
-    <option value="off">
-      <div class="custom-option">
-        <span class="indicator danger"></span>
-        <span class="option-text">Off</span>
-      </div>
-    </option>
-    <option value="disable">
-      <div class="custom-option">
-        <span class="indicator disable"></span>
-        <span class="option-text">Disable</span>
-      </div>
-    </option>
+
+    <div class="slide">
+      <img src="img2.png" alt="Step 2">
+      <div class="caption">Step 2: Click on 'Buscar'</div>
+    </div>
+
+    <div class="slide">
+      <img src="img3.png" alt="Step 3">
+      <div class="caption">Step 3: Wait for the results</div>
+    </div>
+
+    <!-- Navigation -->
+    <a class="prev" onclick="plusSlides(-1)">&#10094;</a>
+    <a class="next" onclick="plusSlides(1)">&#10095;</a>
+
+    <!-- Dots -->
+    <div class="dots">
+      <span class="dot" onclick="currentSlide(1)"></span>
+      <span class="dot" onclick="currentSlide(2)"></span>
+      <span class="dot" onclick="currentSlide(3)"></span>
+    </div>
   </div>
-</select>
+</div>
+
+<script>
+let slideIndex = 1;
+
+function openModal() {
+  document.getElementById("tutorialModal").style.display = "block";
+  showSlides(slideIndex);
+}
+
+function closeModal() {
+  document.getElementById("tutorialModal").style.display = "none";
+}
+
+function plusSlides(n) {
+  showSlides(slideIndex += n);
+}
+
+function currentSlide(n) {
+  showSlides(slideIndex = n);
+}
+
+function showSlides(n) {
+  const slides = document.getElementsByClassName("slide");
+  const dots = document.getElementsByClassName("dot");
+  if (n > slides.length) { slideIndex = 1 }
+  if (n < 1) { slideIndex = slides.length }
+  for (let i = 0; i < slides.length; i++) {
+    slides[i].style.display = "none";
+  }
+  for (let i = 0; i < dots.length; i++) {
+    dots[i].className = dots[i].className.replace(" active", "");
+  }
+  slides[slideIndex-1].style.display = "block";
+  dots[slideIndex-1].className += " active";
+}
+</script>
+
 </body>
 </html>
