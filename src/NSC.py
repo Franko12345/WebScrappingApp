@@ -7,6 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
+from pathlib import Path
 
 options = webdriver.ChromeOptions()
 
@@ -104,8 +105,10 @@ def storeAsExcel(data, final=False):
     
     print(f"Número de noticias sem duplicados: {len(df)}")
     
-    folder = Path("./backup") if not final else Path("./result")
+    local_appdata = Path(os.environ["LOCALAPPDATA"])
 
+    folder = local_appdata / Path("Yast/backup/") if not final else local_appdata / Path("Yast/result/")
+ 
     # Create the folder if it doesn't exist
     folder.mkdir(parents=True, exist_ok=True)
 
