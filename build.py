@@ -43,6 +43,7 @@ def build_if_newer(
     windowed: bool = False,
     optimize: int = 2,
     extra_args: list[str] | None = None,
+    datas: list[tuple[str, str]] | None = None,
 ):
     if pyinstaller_run is None:
         raise RuntimeError("PyInstaller não está disponível neste ambiente. Instale com: pip install pyinstaller")
@@ -79,6 +80,12 @@ def build_if_newer(
     ]
     if windowed:
         args.append("--windowed")
+    # Add data files (assets, HTML, etc.)
+    if datas:
+        # On Windows, use semicolon; on Unix, use colon
+        separator = ";" if sys.platform.startswith("win") else ":"
+        for source, dest in datas:
+            args.append(f"--add-data={source}{separator}{dest}")
     if extra_args:
         args.extend(extra_args)
 
@@ -132,7 +139,11 @@ if __name__ == "__main__":
             "work": "./build",
             "windowed": True,
             "extra": None,
-            "icon": "./assets/app_ico.ico"
+            "icon": "./assets/app_ico.ico",
+            "datas": [
+                ("assets", "assets"),
+                ("main.html", "."),
+            ]
         },
         {
             "script": "./src/NSC.py",
@@ -170,8 +181,9 @@ if __name__ == "__main__":
                 work_path=b["work"],
                 windowed=b["windowed"],
                 optimize=2,
-                extra_args=b["extra"],
+                extra_args=b.get("extra"),
                 icon=b["icon"],
+                datas=b.get("datas"),
             )
         except Exception as e:
             print(f"[ERRO] Falha ao construir {b['script']}: {e}")
