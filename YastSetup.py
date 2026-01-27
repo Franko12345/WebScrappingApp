@@ -128,7 +128,7 @@ def download_and_extract_brave():
     if BRAVE_DIR.exists():
         print(f"✅ Brave already installed at {BRAVE_DIR}")
         return
-    
+
     brave_folder = Path(BRAVE_DIR)
     brave_folder.mkdir(parents=True, exist_ok=True)
 
@@ -205,7 +205,7 @@ def main():
 
     brave_path = INSTALL_DIR / "brave/brave.exe"
 
-    print(brave_path) 
+    print(brave_path)
 
     # Set environment variable permanently (user-level)
     os.system(f'setx BRAVE_PATH "{brave_path}"')
