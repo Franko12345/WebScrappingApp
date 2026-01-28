@@ -18,6 +18,7 @@ from urllib.parse import unquote
 def scrape_infinite_scroll(url, num_items):
     start_time = time.time()  
 
+    print(url)
     driver.get(url)
 
     scraped_data = []
@@ -31,6 +32,8 @@ def scrape_infinite_scroll(url, num_items):
             soup = BeautifulSoup(driver.page_source, 'html.parser')
             product_blocks = soup.find_all('li', {'class': 'widget widget--card widget--info'})
             
+            # print(product_blocks)
+            # break
             for block in product_blocks:    
                 if not block.find('a').get('href'):
                     continue
@@ -59,16 +62,20 @@ def scrape_infinite_scroll(url, num_items):
 
 if __name__ == '__main__':
     searchReference = sys.argv[3:]
+    print(searchReference)
     max_news =  int(sys.argv[2])
     Verbose =  int(sys.argv[1])
 
     options = webdriver.ChromeOptions()
 
+    import os
+    from pathlib import Path
 
     brave_path = os.environ.get("BRAVE_PATH")
     options.binary_location = str(brave_path)
 
     driver_path = os.environ.get("CHROMEDRIVER_PATH")
+    print(driver_path)
     driverpath = Service(driver_path)
 
     options.add_argument('--headless=new')
@@ -79,17 +86,18 @@ if __name__ == '__main__':
     options.add_argument('--ignore-certificate-errors')
     options.add_argument('--allow-running-insecure-content')
     options.add_argument('--disable-notifications')
-    options.add_argument('--disable-blink-features=AutomationControlled')
+    # options.page_load_strategy = 'eager'
+    # options.add_argument('--disable-blink-features=AutomationControlled')
 
-    options.add_argument('--ignore-certificate-errors')
-    options.add_argument('--ignore-ssl-errors')
+    # options.add_argument('--ignore-certificate-errors')
+    # options.add_argument('--ignore-ssl-errors')
 
     user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     options.add_argument(f'user-agent={user_agent}')
     
     # options.page_load_strategy = 'eager'
 
-    driver = webdriver.Chrome(service=driverpath, options=options)
+    driver = webdriver.Chrome(options=options)
 
     df = pd.DataFrame(columns=["Produto", "Link", "Título","Data","Conteúdo"])
     
@@ -112,4 +120,3 @@ if __name__ == '__main__':
     
     # Salvando o DataFrame em um arquivo Excel
     print("Raspagem de dados finalizada")
-

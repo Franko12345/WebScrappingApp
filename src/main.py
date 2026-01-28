@@ -1,5 +1,6 @@
 import os
 import sys
+import subprocess
 from pathlib import Path
 from signal import SIGTERM
 from threading import Thread
@@ -18,10 +19,17 @@ from webview import create_window
 # Handle PyInstaller bundle path
 if getattr(sys, 'frozen', False):
     # Running as a bundled executable
-    BASE_DIR = Path(sys._MEIPASS)
+    # For assets/HTML, use MEIPASS (temporary extraction directory)
+    ASSETS_DIR = Path(sys._MEIPASS)
+    # For executables and other files, use the directory where the exe is located
+    EXE_DIR = Path(sys.executable).parent
 else:
     # Running as a normal Python script
-    BASE_DIR = Path(__file__).parent.parent
+    ASSETS_DIR = Path(__file__).parent.parent
+    EXE_DIR = Path(__file__).parent.parent
+
+# BASE_DIR for backward compatibility (used for assets)
+BASE_DIR = ASSETS_DIR
 
 app = FastAPI()
 
@@ -44,7 +52,8 @@ Busy = False
 
 async def result_cleaner():
     await sleep(2)
-    result_path = BASE_DIR / "result" / "result.xlsx"
+    local_appdata = Path(os.environ["LOCALAPPDATA"])
+    result_path = local_appdata / Path("Yast/result/result.xlsx")
     if result_path.exists():
         os.remove(str(result_path))
 
@@ -69,14 +78,16 @@ async def get_result():
     print("Trying to get result")
     if get_state():
         Busy = False
-        result_path = BASE_DIR / "result" / "result.xlsx"
+        local_appdata = Path(os.environ["LOCALAPPDATA"])
+        result_path = local_appdata / Path("Yast/result/result.xlsx")
         response = FileResponse(str(result_path), filename="result.xlsx", media_type='application/octet-stream')
         create_task(result_cleaner())
         return response
     
 @app.get("/finished")
 def get_state():
-    result_dir = BASE_DIR / "result"
+    local_appdata = Path(os.environ["LOCALAPPDATA"])
+    result_dir = local_appdata / Path("Yast/result/")
     if result_dir.exists():
         return "result.xlsx" in os.listdir(str(result_dir))
     return False
@@ -85,7 +96,8 @@ def get_state():
 def get_busy():
     global Busy
     
-    result_dir = BASE_DIR / "result"
+    local_appdata = Path(os.environ["LOCALAPPDATA"])
+    result_dir = local_appdata / Path("Yast/result/")
     if result_dir.exists() and "result.xlsx" in os.listdir(str(result_dir)) and Busy:
         Busy = False
     
@@ -111,8 +123,84 @@ async def search_news(request: NewsRequest):
     print()
     Busy = True
 
-    buscadores_path = BASE_DIR / "buscadores" / f"{script_table[request.fonte]}.exe"
-    os.system(f'start "{buscadores_path}" 0 {int(request.max_news)} {request.keyword}')
+    # Try multiple possible paths for the scraper executable
+    possible_paths = [
+        EXE_DIR / "buscadores" / f"{script_table[request.fonte]}.exe",  # Next to main.exe
+        Path.cwd() / "buscadores" / f"{script_table[request.fonte]}.exe",  # Current working directory
+    ]
+    
+    # If not running as executable, also check relative to script location
+    if not getattr(sys, 'frozen', False):
+        possible_paths.append(Path(__file__).parent.parent / "buscadores" / f"{script_table[request.fonte]}.exe")
+    
+    buscadores_path = None
+    for path in possible_paths:
+        if path.exists():
+            buscadores_path = path
+            print(f"Found scraper at: {buscadores_path}")
+            break
+    
+    # Check if executable exists
+    if not buscadores_path or not buscadores_path.exists():
+        print(f"ERROR: Scraper executable not found. Tried:")
+        for path in possible_paths:
+            exists = path.exists()
+            print(f"  - {path} (exists: {exists})")
+        Busy = False
+        return {
+            "status": "fail",
+            "message": f"Scraper executable not found: {script_table[request.fonte]}.exe",
+        }
+    
+    # Split keyword into individual terms if it contains spaces
+    keywords = request.keyword.split()
+    
+    # Build command arguments
+    # For g1: [verbose, max_news, ...keywords]
+    # For others: [placeholder, max_news, ...keywords]
+    if request.fonte == "G1":
+        args = ["0", str(int(request.max_news))] + keywords
+    else:
+        args = ["0", str(int(request.max_news))] + keywords
+    
+    # Build full command
+    full_command = [str(buscadores_path)] + args
+    print(f"Starting scraper: {full_command}")
+    
+    # Use subprocess to run in a new console window
+    try:
+        if sys.platform == 'win32':
+            # On Windows, use CREATE_NEW_CONSOLE to show output in separate window
+            process = subprocess.Popen(
+                full_command,
+                creationflags=subprocess.CREATE_NEW_CONSOLE,
+                cwd=str(buscadores_path.parent)
+            )
+            print(f"Scraper started with PID: {process.pid}")
+        else:
+            # On other platforms, run normally
+            process = subprocess.Popen(
+                full_command,
+                cwd=str(buscadores_path.parent)
+            )
+            print(f"Scraper started with PID: {process.pid}")
+    except FileNotFoundError as e:
+        print(f"ERROR: Executable not found: {e}")
+        print(f"Looking for: {buscadores_path}")
+        Busy = False
+        return {
+            "status": "fail",
+            "message": f"Could not find scraper executable: {e}",
+        }
+    except Exception as e:
+        print(f"ERROR starting scraper: {e}")
+        import traceback
+        traceback.print_exc()
+        Busy = False
+        return {
+            "status": "fail",
+            "message": f"Error starting scraper: {e}",
+        }
 
     return {
         "status": "success",
