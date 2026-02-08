@@ -7,4 +7,3 @@ function showNotification() {
         notif.classList.remove("show");
     }, 2000); // disappears after 2 seconds
 }
-

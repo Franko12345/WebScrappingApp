@@ -143,7 +143,7 @@ if __name__ == "__main__":
             "datas": [
                 ("assets", "assets"),
                 ("main.html", "."),
-                ("style.css", "."),
+                ("styles", "styles"),
                 ("scripts", "scripts"),
             ]
         },
