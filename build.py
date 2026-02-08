@@ -172,6 +172,14 @@ if __name__ == "__main__":
             "extra": None,
             "icon": "./assets/buscador.ico"
         },
+        {
+            "script": "./src/terra.py",
+            "dist": "./buscadores",
+            "work": "./build",
+            "windowed": False,
+            "extra": None,
+            "icon": "./assets/buscador.ico"
+        },
     ]
 
     # executa cada build

@@ -114,7 +114,8 @@ def get_busy():
 script_table = {
     "G1": "g1",
     "nd+": "NDmais",
-    "nsc": "NSC"
+    "nsc": "NSC",
+    "terra": "terra"
 }
 
 @app.post("/")
