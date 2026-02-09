@@ -13,6 +13,7 @@ tqdm>=4.65.0
 # File download utility
 wget>=3.2
 pywin32
+certifi
 
 # Built-in modules (no installation needed):
 # sys, os, subprocess, time, zipfile
