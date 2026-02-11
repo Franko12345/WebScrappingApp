@@ -9,7 +9,13 @@ import pythoncom
 import win32com.client
 from win32com.shell import shell, shellcon
 import zipfile
-import urllib.request
+
+import ssl
+import certifi
+
+ssl._create_default_https_context = lambda: ssl.create_default_context(
+    cafile=certifi.where()
+)
 
 REPO_URL = "https://github.com/Franko12345/WebScrappingApp.git"
 INSTALL_DIR = Path(os.environ["ProgramFiles"]) / "Yast"
