@@ -1,0 +1,364 @@
+// Main application logic
+let menu_tab = 0
+let tags_list = []
+let classes_counter = 0
+let editingClassGroupName = ""
+let classes_groups = {
+    default: {
+        name:  "Padrão",
+        class_1: {
+            name: "Passado",
+            description: ""
+        },
+        class_2: {
+            name: "Histórico",
+            description: ""
+        },
+        class_3: {
+            name: "Previsão",
+            description: ""
+        },
+    }
+}
+
+var form = document.getElementById("ClassesForm");
+function handleForm(event) { 
+    event.preventDefault(); 
+    saveClassGroupEdit() 
+} 
+form.addEventListener('submit', handleForm);
+
+function readClasses(){
+    let classes_editor = document.getElementById("classes_editor")
+    let class_group = document.getElementById("class_group")
+
+    while (class_group.children[1].disabled != class_group.lastElementChild.disabled) {
+        class_group.removeChild(class_group.lastChild);
+    }
+    while (classes_editor.children[1].disabled != classes_editor.lastElementChild.disabled) {
+        classes_editor.removeChild(classes_editor.lastChild);
+    }
+
+    for (const [key, value] of Object.entries(classes_groups)){
+        classes_editor.insertAdjacentHTML("beforeend", `
+            <option value="${key}">
+                <div class="custom-option">
+                    <span class="option-text">${value.name}</span>
+                </div>
+            </option>
+        `)
+    }
+    for (const [key, value] of Object.entries(classes_groups)){
+        console.log("key")
+        class_group.insertAdjacentHTML("beforeend", `
+            <option value="${key}">
+                <div class="custom-option">
+                    <span class="option-text">${value.name}</span>
+                </div>
+            </option>
+        `)
+    }
+}
+readClasses()
+
+function handleClassSelect(){
+    let content = document.getElementById("class_content")
+    let classes_editor = document.getElementById("classes_editor")
+    let add_class = document.getElementById("add_class")
+    add_class.style.display = "flex"
+    editingClassGroupName = classes_editor.value
+    data = classes_groups[classes_editor.value]
+
+    content.innerHTML = ""
+    classes_counter = 0
+    for(const parameter in data){
+        console.log(parameter)
+        if(classes_counter==0){
+            content.insertAdjacentHTML("beforeend", `
+                <div class="input_group">
+                    <label for="class_name">Nome</label>
+                    <input id="class_name" name="class_name" type="text" placeholder="Nome do grupo de classificações" value="${data.name}">
+                </div>
+                <hr style="color:#646464; background:#646464;border:#646464">
+            `)
+        } else{
+            content.insertAdjacentHTML("beforeend", `
+                <div class="input_group" style="margin-top: 15px">
+                    <label for="class_category_${classes_counter}">Categoria ${classes_counter}</label>
+                    <input id="category_${classes_counter}" name="class_category_${classes_counter}" type="text" placeholder="Nome da categoria" value="${data[parameter].description}">
+                    <textarea name="" id="description_${classes_counter}" placeholder="Informe a descrição da categoria"></textarea>
+                </div>
+            `)
+        }
+        
+        classes_counter++
+    }
+    
+}
+
+function handleNewClassGroup(){
+    let content = document.getElementById("class_content")
+    let classes_editor = document.getElementById("classes_editor")
+    let add_class = document.getElementById("add_class")
+    console.log(editingClassGroupName)
+    add_class.style.display = "flex"
+    data = classes_groups[classes_editor.value]
+
+    content.innerHTML = ""
+    classes_counter = 2
+    content.insertAdjacentHTML("beforeend", `
+        <div class="input_group">
+            <label for="class_name">Nome</label>
+            <input id="class_name" name="class_name" type="text" placeholder="Nome do grupo de classificações" value="">
+        </div>
+        <hr style="color:#646464; background:#646464;border:#646464">
+    `)
+    content.insertAdjacentHTML("beforeend", `
+        <div class="input_group" style="margin-top: 15px">
+            <label for="class_category_1">Categoria 1</label>
+            <input id="category_1" name="class_category_1" type="text" placeholder="Nome da categoria" value="">
+            <textarea name="" id="description_1" placeholder="Informe a descrição da categoria"></textarea>
+        </div>
+    `)
+}
+
+function addClassGroup(){
+    class_group_name = `group_${Object.keys(classes_groups).length+1}`
+    classes_groups[`group_${Object.keys(classes_groups).length+1}`] = {
+        name:"",
+        class_1: {
+            name: "",
+            description: ""
+        }
+    }
+    editingClassGroupName = `group_${Object.keys(classes_groups).length}`
+    console.log(classes_groups)
+    handleNewClassGroup()
+    console.log("finished")
+}
+
+function addClass(){
+    let content = document.getElementById("class_content")
+    let classes_editor = document.getElementById("classes_editor")
+    let class_name = document.getElementById("class_name")
+    data = classes_groups[class_name.value]
+
+    classes_counter++
+    content.insertAdjacentHTML("beforeend", `
+        <div class="input_group" style="margin-top: 15px">
+            <label for="category_name">Categoria ${classes_counter}</label>
+            <input id="category_${classes_counter}" name="class_category_${classes_counter}" type="text" placeholder="Nome da categoria" value="">
+            <textarea name="" id="description_${classes_counter}" placeholder="Informe a descrição da categoria"></textarea>
+        </div>
+    `)
+}
+
+function saveClassGroupEdit(){
+    console.log(classes_counter)
+    for(let i=1;i<classes_counter;i++) {
+        let category = document.getElementById(`category_${i}`)
+        let description = document.getElementById(`description_${i}`)
+        let class_name = document.getElementById(`class_name`)
+
+        classes_groups[editingClassGroupName]["name"] = class_name.value
+        classes_groups[editingClassGroupName][`class_${i}`]["name"] = category.value
+        classes_groups[editingClassGroupName][`class_${i}`]["description"] = description.value
+        console.log(classes_groups)
+    }
+    readClasses()
+    showNotification()
+    let content = document.getElementById("class_content")
+    content.innerHTML = ""
+}
+
+function writeTags(){
+    let tags = document.getElementById("tags")
+    console.log(tags_list)
+    tags.innerHTML = ""
+    tags.innerText = ""
+    tags_list.forEach((el,i) => {
+        tags.insertAdjacentHTML("beforeend", `
+        <div id="tag_${el}" class="tag">
+            ${el}
+            <i class="tag_del fi fi-rr-cross-small" onclick="delTag('${el}')"></i>
+        </div>
+        `)
+    })
+}
+
+function addTag(tag){
+    console.log(tag)
+    console.log(tags_list.includes(tag))
+    if(tags_list.includes(tag)) {return}
+    tags_list.push(tag)
+    writeTags()
+}
+
+function delTag(tag){
+    tags_list = tags_list.filter(item => item !== tag)
+    writeTags()
+}
+
+function handleTagInput(key) {
+    let tags_selector = document.getElementById("tags_selector")
+    if (key.code === 'Space' || key.code === 'Enter' || key.code === "Tab") {
+        addTag(tags_selector.value.trim())
+        writeTags()
+        tags_selector.value = ""
+    }
+}
+
+function switchTabs(tab){
+    let home_tab = document.getElementById("home_tab")
+    let classes_tab = document.getElementById("classes_tab")
+    let info_tab = document.getElementById("info_tab")
+    let home_tab_text = document.getElementById("home_tab_text")
+    let classes_tab_text = document.getElementById("classes_tab_text")
+    let info_tab_text = document.getElementById("info_tab_text")
+
+    let home_section = document.getElementById("home_section")
+    let classes_section = document.getElementById("classes_section")
+    let info_section = document.getElementById("info_section")
+
+    if (tab == 0){
+        home_tab.classList.add("selected")
+        classes_tab.classList.remove("selected")
+        info_tab.classList.remove("selected")
+        home_section.style.display = "inline-block"
+        classes_section.style.display = "none"
+        info_section.style.display = "none"
+        
+        home_tab_text.classList.add("show")
+        classes_tab_text.classList.remove("show")
+        info_tab_text.classList.remove("show")
+    } else if(tab == 1){
+        home_tab.classList.remove("selected")
+        classes_tab.classList.add("selected")
+        info_tab.classList.remove("selected")
+        home_section.style.display = "none"
+        classes_section.style.display = "inline-block"
+        info_section.style.display = "none"
+        
+        home_tab_text.classList.remove("show")
+        classes_tab_text.classList.add("show")
+        info_tab_text.classList.remove("show")
+    } else if(tab == 2){
+        home_tab.classList.remove("selected")
+        classes_tab.classList.remove("selected")
+        info_tab.classList.add("selected")
+        home_section.style.display = "none"
+        classes_section.style.display = "none"
+        info_section.style.display = "inline-block"
+        
+        home_tab_text.classList.remove("show")
+        classes_tab_text.classList.remove("show")
+        info_tab_text.classList.add("show")
+    }
+}
+
+function fetch_news(path, method, requestData={}){
+    payload = {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json'
+        },
+    }
+    if (method == "POST"){
+        payload["body"] = JSON.stringify(requestData)
+    }
+    
+    return fetch("http://127.0.0.1:5555"+path, payload)
+    .then(response => response.json())
+    .then(data => {
+        return data
+    })
+    .catch(error => {
+        console.error('Erro na requisição:', error);
+        return {"status": "error"}
+    });
+}
+
+checkDownload = 0
+function CheckDownload(){
+    console.log("checking")
+    if (document.getElementById('downloadBtn').checkVisibility()) {
+        console.log("ok")
+        clearInterval(checkDownload)
+        return 
+    }
+
+    fetch_news("/finished", "GET").then((r) => {
+        if (r){
+            document.getElementById('downloadBtn').style.display = "flex";
+            console.log("bolas")
+        }
+    })
+}
+
+function mostrarDownload(event) {
+    event.preventDefault();
+    
+    document.getElementById('downloadBtn').style.display = "none";
+    console.log("bolas2")
+
+    const palavra = tags_list.join(" ");
+    const media_outlet = document.getElementById('media_outlet').value;
+    const max_news = document.getElementById('max_news').value == "" ? 50 : document.getElementById('max_news').value;
+    
+    console.log("Palavra-chave:", palavra);
+    console.log("Fonte:", media_outlet);
+    console.log("Número máximo de notícias:", max_news);
+
+    const requestData = {
+        keyword: palavra,
+        fonte: media_outlet,
+        max_news: parseInt(max_news)
+    };
+
+    fetch_news("", "POST", requestData).then((r) => {
+        console.log("Resposta da API:", r)
+    })
+
+    checkDownload = setInterval(CheckDownload, 1000)
+    
+}
+
+setInterval(() => {
+    fetch_news("/busy", "GET").then((r) =>{
+        currentText = document.getElementById("submit").textContent
+        if (r) {
+            document.getElementById("submit").textContent = currentText == "Loading." ? "Loading.." : currentText == "Loading.."? "Loading..." :currentText == "Loading..."? "Loading." : "Loading."  
+        }else if (currentText != "Buscar"){
+            document.getElementById("submit").textContent = "Buscar"
+        }
+    })
+        
+}, 500)
+
+function baixarArquivo() {
+    // Faz requisição para a API para obter o arquivo
+    fetch("http://127.0.0.1:5555/file")
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Erro ao baixar arquivo da API');
+        }
+        return response.blob();
+    })
+    .then(blob => {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'resultados.xlsx';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    })
+    .catch(error => {
+        console.error('Erro ao baixar arquivo:', error);
+    });
+}
+
+window.onload = function() {
+    document.getElementById('downloadBtn').addEventListener('click', baixarArquivo);
+}
+
+

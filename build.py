@@ -143,6 +143,8 @@ if __name__ == "__main__":
             "datas": [
                 ("assets", "assets"),
                 ("main.html", "."),
+                ("styles", "styles"),
+                ("scripts", "scripts"),
             ]
         },
         {
@@ -164,6 +166,14 @@ if __name__ == "__main__":
         },
         {
             "script": "./src/g1.py",
+            "dist": "./buscadores",
+            "work": "./build",
+            "windowed": False,
+            "extra": None,
+            "icon": "./assets/buscador.ico"
+        },
+        {
+            "script": "./src/terra.py",
             "dist": "./buscadores",
             "work": "./build",
             "windowed": False,

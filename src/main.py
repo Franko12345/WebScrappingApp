@@ -66,6 +66,14 @@ def busySetter(value):
 assets_path = BASE_DIR / "assets"
 if assets_path.exists():
     app.mount("/assets", StaticFiles(directory=str(assets_path)), name="assets")
+# Mount static files for assets
+scripts_path = BASE_DIR / "scripts"
+if scripts_path.exists():
+    app.mount("/scripts", StaticFiles(directory=str(scripts_path)), name="scripts")
+# Mount static files for assets
+styles_path = BASE_DIR / "styles"
+if BASE_DIR.exists():
+    app.mount("/styles", StaticFiles(directory=str(styles_path)), name="styles")
 
 @app.get("/")
 def read_root():
@@ -106,7 +114,8 @@ def get_busy():
 script_table = {
     "G1": "g1",
     "nd+": "NDmais",
-    "nsc": "NSC"
+    "nsc": "NSC",
+    "terra": "terra"
 }
 
 @app.post("/")
