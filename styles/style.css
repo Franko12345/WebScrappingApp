@@ -542,6 +542,10 @@ dialog[open] {
 /* Classes */
 #classes_section{
     width: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: 100%;
+    flex-grow: 1;
 }
 hr{
     height: 1px;
@@ -637,7 +641,8 @@ main{
 }
 
 .main-section{
-    overflow: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .main-section::-webkit-scrollbar {
@@ -781,4 +786,81 @@ main{
 
 #downloadBtn.show{
     display: flex
+}
+
+/* Floating Confirmation Popups */
+.floating-confirm-popup {
+    position: fixed !important;
+    background: white !important;
+    border: 1px solid #ddd !important;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 16px;
+    z-index: 10000 !important;
+    min-width: 250px;
+    animation: slideInError 0.3s ease-out;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.floating-confirm-popup.center-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 300px;
+}
+
+.floating-confirm-popup .popup-content {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.floating-confirm-popup .popup-content p {
+    margin: 0;
+    color: #333;
+    font-size: 0.9rem;
+}
+
+.floating-confirm-popup .popup-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.floating-confirm-popup .popup-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.floating-confirm-popup .popup-btn.confirm-btn {
+    background-color: var(--primary-color);
+    color: #333;
+}
+
+.floating-confirm-popup .popup-btn.confirm-btn:hover {
+    background-color: #9FE8B3;
+}
+
+.floating-confirm-popup .popup-btn.cancel-btn {
+    background-color: #dc3545;
+    color: white;
+}
+
+.floating-confirm-popup .popup-btn.cancel-btn:hover {
+    background-color: #c82333;
+}
+
+.floating-confirm-popup .popup-btn svg {
+    width: 20px;
+    height: 20px;
 }

@@ -3,6 +3,7 @@ let menu_tab = 0
 let tags_list = []
 let classes_counter = 0
 let editingClassGroupName = ""
+let tempEditingGroup = null // Temporary structure for editing/creating
 let classes_groups = {
     default: {
         name:  "Padrão",
@@ -65,47 +66,82 @@ function handleClassSelect(){
     let content = document.getElementById("class_content")
     let classes_editor = document.getElementById("classes_editor")
     let add_class = document.getElementById("add_class")
+    
+    if (!classes_editor.value || classes_editor.value === "_") {
+        resetCategoriesTab()
+        return
+    }
+    
     add_class.style.display = "flex"
     editingClassGroupName = classes_editor.value
-    data = classes_groups[classes_editor.value]
+    
+    // Show cancel button
+    const cancelBtn = document.getElementById("classes_cancel")
+    if (cancelBtn) {
+        cancelBtn.style.display = "flex"
+    }
+    
+    // Create a deep copy of the group for temporary editing
+    const originalData = classes_groups[classes_editor.value]
+    if (!originalData) {
+        resetCategoriesTab()
+        return
+    }
+    
+    // Deep clone the data structure
+    tempEditingGroup = JSON.parse(JSON.stringify(originalData))
 
     content.innerHTML = ""
+    
+    // Add the name field first
+    content.insertAdjacentHTML("beforeend", `
+        <div class="input_group">
+            <label for="class_name">Nome</label>
+            <input id="class_name" name="class_name" type="text" placeholder="Nome do grupo de classificações" value="${tempEditingGroup.name || ''}">
+        </div>
+        <hr style="color:#646464; background:#646464;border:#646464">
+    `)
+    
+    // Count only class_* properties, not "name"
     classes_counter = 0
-    for(const parameter in data){
-        console.log(parameter)
-        if(classes_counter==0){
-            content.insertAdjacentHTML("beforeend", `
-                <div class="input_group">
-                    <label for="class_name">Nome</label>
-                    <input id="class_name" name="class_name" type="text" placeholder="Nome do grupo de classificações" value="${data.name}">
-                </div>
-                <hr style="color:#646464; background:#646464;border:#646464">
-            `)
-        } else{
+    for(const parameter in tempEditingGroup){
+        if (parameter.startsWith('class_')) {
+            classes_counter++
+            const categoryData = tempEditingGroup[parameter]
             content.insertAdjacentHTML("beforeend", `
                 <div class="input_group" style="margin-top: 15px">
                     <label for="class_category_${classes_counter}">Categoria ${classes_counter}</label>
-                    <input id="category_${classes_counter}" name="class_category_${classes_counter}" type="text" placeholder="Nome da categoria" value="${data[parameter].description}">
-                    <textarea name="" id="description_${classes_counter}" placeholder="Informe a descrição da categoria"></textarea>
+                    <input id="category_${classes_counter}" name="class_category_${classes_counter}" type="text" placeholder="Nome da categoria" value="${categoryData?.name || ''}">
+                    <textarea name="" id="description_${classes_counter}" placeholder="Informe a descrição da categoria">${categoryData?.description || ''}</textarea>
                 </div>
             `)
         }
-        
-        classes_counter++
     }
     
 }
 
 function handleNewClassGroup(){
     let content = document.getElementById("class_content")
-    let classes_editor = document.getElementById("classes_editor")
     let add_class = document.getElementById("add_class")
-    console.log(editingClassGroupName)
     add_class.style.display = "flex"
-    data = classes_groups[classes_editor.value]
+    
+    // Show cancel button
+    const cancelBtn = document.getElementById("classes_cancel")
+    if (cancelBtn) {
+        cancelBtn.style.display = "flex"
+    }
+    
+    // Create a new temporary group structure
+    tempEditingGroup = {
+        name: "",
+        class_1: {
+            name: "",
+            description: ""
+        }
+    }
 
     content.innerHTML = ""
-    classes_counter = 2
+    classes_counter = 1
     content.insertAdjacentHTML("beforeend", `
         <div class="input_group">
             <label for="class_name">Nome</label>
@@ -122,28 +158,82 @@ function handleNewClassGroup(){
     `)
 }
 
-function addClassGroup(){
-    class_group_name = `group_${Object.keys(classes_groups).length+1}`
-    classes_groups[`group_${Object.keys(classes_groups).length+1}`] = {
-        name:"",
-        class_1: {
-            name: "",
-            description: ""
-        }
+let pendingTabSwitch = null
+
+function addClassGroup(event){
+    // Prevent event from bubbling up
+    if (event) {
+        event.stopPropagation()
     }
-    editingClassGroupName = `group_${Object.keys(classes_groups).length}`
-    console.log(classes_groups)
+    
+    // Check if we're currently editing/creating a group
+    const content = document.getElementById("class_content")
+    if (editingClassGroupName && content && content.innerHTML.trim() !== "") {
+        // Show confirmation popup
+        const popup = document.getElementById("confirm_new_group_popup")
+        if (popup) {
+            // Position popup to the right of the button
+            const button = document.getElementById("add_classGroup")
+            if (button) {
+                const rect = button.getBoundingClientRect()
+                popup.style.left = (rect.right + 10) + "px"
+                popup.style.top = (rect.top + window.scrollY) + "px"
+                popup.style.right = "auto"
+                popup.style.bottom = "auto"
+                popup.style.display = "block"
+                console.log("Showing popup at:", popup.style.left, popup.style.top)
+            }
+        } else {
+            console.error("Popup element not found!")
+        }
+        return false
+    }
+    
+    // If no editing, proceed directly
+    createNewGroup()
+    return false
+}
+
+function confirmNewGroup() {
+    const popup = document.getElementById("confirm_new_group_popup")
+    if (popup) {
+        popup.style.display = "none"
+    }
+    createNewGroup()
+}
+
+function cancelNewGroup() {
+    const popup = document.getElementById("confirm_new_group_popup")
+    if (popup) {
+        popup.style.display = "none"
+    }
+}
+
+function createNewGroup() {
+    // Generate a temporary key for editing (will be replaced on save)
+    const newGroupKey = `group_${Object.keys(classes_groups).length + 1}`
+    editingClassGroupName = newGroupKey
+    
+    // Don't add to classes_groups yet - only add on save
+    // Just initialize the temp structure
     handleNewClassGroup()
-    console.log("finished")
 }
 
 function addClass(){
     let content = document.getElementById("class_content")
-    let classes_editor = document.getElementById("classes_editor")
-    let class_name = document.getElementById("class_name")
-    data = classes_groups[class_name.value]
-
+    
+    // Increment counter first to get the correct number
     classes_counter++
+    
+    // Add to temp structure
+    if (!tempEditingGroup) {
+        tempEditingGroup = {}
+    }
+    tempEditingGroup[`class_${classes_counter}`] = {
+        name: "",
+        description: ""
+    }
+    
     content.insertAdjacentHTML("beforeend", `
         <div class="input_group" style="margin-top: 15px">
             <label for="category_name">Categoria ${classes_counter}</label>
@@ -153,22 +243,108 @@ function addClass(){
     `)
 }
 
-function saveClassGroupEdit(){
-    console.log(classes_counter)
-    for(let i=1;i<classes_counter;i++) {
-        let category = document.getElementById(`category_${i}`)
-        let description = document.getElementById(`description_${i}`)
-        let class_name = document.getElementById(`class_name`)
-
-        classes_groups[editingClassGroupName]["name"] = class_name.value
-        classes_groups[editingClassGroupName][`class_${i}`]["name"] = category.value
-        classes_groups[editingClassGroupName][`class_${i}`]["description"] = description.value
-        console.log(classes_groups)
+function showClassesError(message) {
+    const errorDiv = document.getElementById("classes_error")
+    if (errorDiv) {
+        errorDiv.textContent = message
+        errorDiv.style.display = "block"
+        errorDiv.style.animation = "slideInError 0.3s ease-out"
+        
+        // Scroll to error
+        errorDiv.scrollIntoView({ behavior: "smooth", block: "nearest" })
     }
+}
+
+function hideClassesError() {
+    const errorDiv = document.getElementById("classes_error")
+    if (errorDiv) {
+        errorDiv.style.display = "none"
+    }
+}
+
+function saveClassGroupEdit(){
+    // Hide any previous errors
+    hideClassesError()
+    
+    // Validation
+    const class_name = document.getElementById("class_name")
+    if (!class_name || !class_name.value || class_name.value.trim() === "") {
+        showClassesError("Por favor, informe o nome do grupo de classificações")
+        return
+    }
+    
+    // Check if at least one category is valid (has a name)
+    let hasValidCategory = false
+    for(let i=1; i<=classes_counter; i++) {
+        const category = document.getElementById(`category_${i}`)
+        if (category && category.value && category.value.trim() !== "") {
+            hasValidCategory = true
+            break
+        }
+    }
+    
+    if (!hasValidCategory) {
+        showClassesError("Por favor, adicione pelo menos uma categoria com nome")
+        return
+    }
+    
+    // Update temp structure from form
+    if (!tempEditingGroup) {
+        tempEditingGroup = {}
+    }
+    
+    tempEditingGroup.name = class_name.value.trim()
+    
+    // Remove all existing class_* properties from temp
+    const tempKeys = Object.keys(tempEditingGroup)
+    for (const key of tempKeys) {
+        if (key.startsWith('class_')) {
+            delete tempEditingGroup[key]
+        }
+    }
+    
+    // Save categories from form to temp structure
+    for(let i=1; i<=classes_counter; i++) {
+        const category = document.getElementById(`category_${i}`)
+        const description = document.getElementById(`description_${i}`)
+        
+        if (category) {
+            tempEditingGroup[`class_${i}`] = {
+                name: category.value.trim(),
+                description: description ? description.value.trim() : ""
+            }
+        }
+    }
+    
+    // Now save temp structure to actual classes_groups
+    const originalKey = editingClassGroupName
+    
+    // Check if this is a new group (doesn't exist in classes_groups)
+    if (!classes_groups[originalKey]) {
+        // It's a new group, use the generated key
+        classes_groups[originalKey] = JSON.parse(JSON.stringify(tempEditingGroup))
+    } else {
+        // It's an existing group, update it
+        classes_groups[originalKey] = JSON.parse(JSON.stringify(tempEditingGroup))
+    }
+    
+    console.log(classes_groups)
     readClasses()
     showNotification()
-    let content = document.getElementById("class_content")
-    content.innerHTML = ""
+    
+    // Scroll to top of classes section
+    const classesSection = document.getElementById("classes_section")
+    if (classesSection) {
+        classesSection.scrollTop = 0
+    }
+    
+    // Reset the form
+    resetCategoriesTab()
+}
+
+function cancelClassGroupEdit() {
+    // Just reset without saving
+    resetCategoriesTab()
 }
 
 function writeTags(){
@@ -292,7 +468,123 @@ function moveToNextField(currentFieldId) {
     }
 }
 
-function switchTabs(tab){
+function resetCategoriesTab() {
+    // Scroll to top of classes section first
+    const classesSection = document.getElementById("classes_section")
+    if (classesSection) {
+        classesSection.scrollTop = 0
+    }
+    
+    // Clear the content
+    const content = document.getElementById("class_content")
+    if (content) {
+        content.innerHTML = ""
+    }
+    
+    // Hide the add class button
+    const add_class = document.getElementById("add_class")
+    if (add_class) {
+        add_class.style.display = "none"
+    }
+    
+    // Hide cancel button
+    const cancelBtn = document.getElementById("classes_cancel")
+    if (cancelBtn) {
+        cancelBtn.style.display = "none"
+    }
+    
+    // Reset the select dropdown
+    const classes_editor = document.getElementById("classes_editor")
+    if (classes_editor) {
+        classes_editor.value = "_"
+    }
+    
+    // Hide any error messages
+    hideClassesError()
+    
+    // Reset editing state
+    editingClassGroupName = ""
+    classes_counter = 0
+    tempEditingGroup = null
+}
+
+function hasUnsavedChanges() {
+    // Check if there's content being edited
+    const content = document.getElementById("class_content")
+    if (!content || content.innerHTML.trim() === "") {
+        return false
+    }
+    
+    // Check if we're editing a group
+    if (!editingClassGroupName || !tempEditingGroup) {
+        return false
+    }
+    
+    // Check if temp structure differs from saved structure
+    const savedGroup = classes_groups[editingClassGroupName]
+    if (!savedGroup) {
+        // New group, check if any fields have values
+        const class_name = document.getElementById("class_name")
+        if (class_name && class_name.value.trim() !== "") {
+            return true
+        }
+        // Check if any category has a value
+        for(let i=1; i<=classes_counter; i++) {
+            const category = document.getElementById(`category_${i}`)
+            if (category && category.value.trim() !== "") {
+                return true
+            }
+        }
+        return false
+    }
+    
+    // Compare temp with saved
+    const class_name = document.getElementById("class_name")
+    if (class_name && class_name.value.trim() !== savedGroup.name) {
+        return true
+    }
+    
+    // Compare categories
+    for(let i=1; i<=classes_counter; i++) {
+        const category = document.getElementById(`category_${i}`)
+        const description = document.getElementById(`description_${i}`)
+        const savedCategory = savedGroup[`class_${i}`]
+        
+        if (category && category.value.trim() !== (savedCategory?.name || "")) {
+            return true
+        }
+        if (description && description.value.trim() !== (savedCategory?.description || "")) {
+            return true
+        }
+    }
+    
+    return false
+}
+
+function confirmExitCategories() {
+    const popup = document.getElementById("confirm_exit_categories_popup")
+    if (popup) {
+        popup.style.display = "none"
+    }
+    
+    // Reset and proceed with tab switch
+    resetCategoriesTab()
+    
+    if (pendingTabSwitch !== null) {
+        proceedWithTabSwitch(pendingTabSwitch)
+        pendingTabSwitch = null
+    }
+}
+
+function cancelExitCategories() {
+    const popup = document.getElementById("confirm_exit_categories_popup")
+    if (popup) {
+        popup.style.display = "none"
+    }
+    pendingTabSwitch = null
+}
+
+function proceedWithTabSwitch(tab) {
     let home_tab = document.getElementById("home_tab")
     let classes_tab = document.getElementById("classes_tab")
     let info_tab = document.getElementById("info_tab")
@@ -338,6 +630,35 @@ function switchTabs(tab){
         classes_tab_text.classList.remove("show")
         info_tab_text.classList.add("show")
     }
+    
+    // Update menu_tab
+    menu_tab = tab
+}
+
+function switchTabs(tab){
+    // Check if we're leaving categories tab
+    if (menu_tab == 1 && tab != 1) {
+        const hasChanges = hasUnsavedChanges()
+        console.log("Checking unsaved changes:", hasChanges, "editingClassGroupName:", editingClassGroupName, "tempEditingGroup:", tempEditingGroup)
+        
+        if (hasChanges) {
+            // Show confirmation popup
+            pendingTabSwitch = tab
+            const popup = document.getElementById("confirm_exit_categories_popup")
+            if (popup) {
+                popup.style.display = "block"
+                console.log("Showing exit popup")
+            } else {
+                console.error("Exit popup element not found!")
+            }
+            return
+        } else {
+            // No changes, just reset
+            resetCategoriesTab()
+        }
+    }
+    
+    proceedWithTabSwitch(tab)
 }
 
 function fetch_news(path, method, requestData={}){
@@ -679,6 +1000,20 @@ window.onload = function() {
             }
         });
     }
+    
+    // Close popups when clicking outside
+    document.addEventListener('click', (e) => {
+        const newGroupPopup = document.getElementById('confirm_new_group_popup')
+        const exitPopup = document.getElementById('confirm_exit_categories_popup')
+        const addClassGroupBtn = document.getElementById('add_classGroup')
+        
+        // Close new group popup if clicking outside
+        if (newGroupPopup && newGroupPopup.style.display === 'block') {
+            if (!newGroupPopup.contains(e.target) && !addClassGroupBtn.contains(e.target)) {
+                cancelNewGroup()
+            }
+        }
+    })
 }
 
 

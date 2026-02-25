@@ -26,6 +26,47 @@
 </svg>
 
     <span id="show_reference" onclick="reference.showModal()">ⓘ Clique para saber mais sobre o projeto</span>
+    
+    <!-- Floating confirmation popup for exiting categories tab -->
+    <div id="confirm_exit_categories_popup" class="floating-confirm-popup center-popup" style="display: none;">
+        <div class="popup-content">
+            <p>Você tem alterações não salvas. Deseja descartá-las?</p>
+            <div class="popup-buttons">
+                <button class="popup-btn confirm-btn" onclick="confirmExitCategories()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </button>
+                <button class="popup-btn cancel-btn" onclick="cancelExitCategories()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Floating confirmation popup for creating new group -->
+    <div id="confirm_new_group_popup" class="floating-confirm-popup" style="display: none;">
+        <div class="popup-content">
+            <p>Descartar alterações e criar novo grupo?</p>
+            <div class="popup-buttons">
+                <button class="popup-btn confirm-btn" onclick="confirmNewGroup()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </button>
+                <button class="popup-btn cancel-btn" onclick="cancelNewGroup()">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+    
     <main>
         <div id="form-header">
             <div id="home_tab" class="icons_containers selected" onclick={switchTabs(0)}>
@@ -187,7 +228,7 @@
                                 </div>
                             </option>
                         </select>
-                        <div id="add_classGroup" onclick="addClassGroup()">
+                        <div id="add_classGroup" onclick="addClassGroup(event)">
                             <!-- <img src="assets/plus.svg" class="icons" style="width: 16px;" alt=""> -->
                             <svg class="icons" style="width: 16px;" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" id="Capa_1" x="0px" y="0px" viewBox="0 0 512 512" style="enable-background:new 0 0 512 512;" xml:space="preserve" width="512" height="512">
                                 <g>
@@ -202,14 +243,23 @@
                 <div id="class_content">
 
                 </div>
-                <div id="add_class" style="width: 100%; display: flex; justify-content: center; display: none;" onclick="addClass()">
+                <div id="add_class" style="width: 100%; display: none; justify-content: center;" onclick="addClass()">
                     <!-- <img class="icons" src="./assets/add.svg" alt="" style="cursor: pointer;"> -->
                     <svg class="icons" xmlns="http://www.w3.org/2000/svg" id="Layer_1" data-name="Layer 1" viewBox="0 0 24 24">
                         <path d="m12,0C5.383,0,0,5.383,0,12s5.383,12,12,12,12-5.383,12-12S18.617,0,12,0Zm0,23c-6.065,0-11-4.935-11-11S5.935,1,12,1s11,4.935,11,11-4.935,11-11,11Zm5-11c0,.276-.224.5-.5.5h-4v4c0,.276-.224.5-.5.5s-.5-.224-.5-.5v-4h-4c-.276,0-.5-.224-.5-.5s.224-.5.5-.5h4v-4c0-.276.224-.5.5-.5s.5.224.5.5v4h4c.276,0,.5.224.5.5Z"/>
                     </svg>
 
                 </div>
-                <input id="classes_save" type="submit" value="Salvar">
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <input id="classes_save" type="submit" value="Salvar">
+                    <button id="classes_cancel" type="button" onclick="cancelClassGroupEdit()" style="height: stretch; width: 50px; border: none; border-radius: 8px; background-color: #dc3545; color: white; cursor: pointer; display: none; align-items: center; justify-content: center; transition: background-color 0.2s ease;" onmouseover="this.style.backgroundColor='#c82333'" onmouseout="this.style.backgroundColor='#dc3545'">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+                <div id="classes_error" class="field-error" style="display: none; margin-top: 8px;"></div>
             </form>
         </div>
         <div id="info_section" style="display: none;">
