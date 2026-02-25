@@ -192,11 +192,15 @@ function addTag(tag){
     if(tags_list.includes(tag)) {return}
     tags_list.push(tag)
     writeTags()
+    clearFieldError('tags_selector')
 }
 
 function delTag(tag){
     tags_list = tags_list.filter(item => item !== tag)
     writeTags()
+    if (tags_list.length > 0) {
+        clearFieldError('tags_selector')
+    }
 }
 
 function handleTagInput(key) {
@@ -205,6 +209,7 @@ function handleTagInput(key) {
         addTag(tags_selector.value.trim())
         writeTags()
         tags_selector.value = ""
+        clearFieldError('tags_selector')
     }
 }
 
@@ -295,8 +300,102 @@ function CheckDownload(){
     })
 }
 
+function showFieldError(fieldId, message) {
+    // Remove existing error message if any
+    const existingError = document.getElementById(`${fieldId}_error`);
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    // Find the input group container
+    const field = document.getElementById(fieldId);
+    if (!field) return;
+    
+    const inputGroup = field.closest('.input_group');
+    if (!inputGroup) return;
+    
+    // Create error message element
+    const errorElement = document.createElement('div');
+    errorElement.id = `${fieldId}_error`;
+    errorElement.className = 'field-error';
+    errorElement.textContent = message;
+    
+    // Insert error message after the field or its container
+    if (fieldId === 'tags_selector') {
+        const tagsContainer = document.getElementById('tags');
+        if (tagsContainer && tagsContainer.parentNode) {
+            tagsContainer.parentNode.insertBefore(errorElement, tagsContainer.nextSibling);
+        } else {
+            inputGroup.appendChild(errorElement);
+        }
+    } else if (fieldId === 'max_news') {
+        const maxNewsContainer = document.getElementById('max_news_container');
+        if (maxNewsContainer && maxNewsContainer.parentNode) {
+            maxNewsContainer.parentNode.insertBefore(errorElement, maxNewsContainer.nextSibling);
+        } else {
+            inputGroup.appendChild(errorElement);
+        }
+    } else {
+        inputGroup.appendChild(errorElement);
+    }
+}
+
+function clearFieldError(fieldId) {
+    const errorElement = document.getElementById(`${fieldId}_error`);
+    if (errorElement) {
+        errorElement.remove();
+    }
+}
+
+function validateForm() {
+    let isValid = true;
+    
+    // Clear all previous errors
+    document.querySelectorAll('.field-error').forEach(error => error.remove());
+    
+    // Validate tags
+    if (tags_list.length === 0) {
+        showFieldError('tags_selector', 'Por favor, adicione pelo menos uma palavra-chave');
+        isValid = false;
+    }
+    
+    // Validate media outlet
+    const media_outlet = document.getElementById('media_outlet').value;
+    if (!media_outlet || media_outlet === '_') {
+        showFieldError('media_outlet', 'Por favor, selecione um veículo de notícia');
+        isValid = false;
+    }
+    
+    // Validate class group
+    const class_group = document.getElementById('class_group').value;
+    if (!class_group || class_group === '_') {
+        showFieldError('class_group', 'Por favor, selecione um grupo de categorias');
+        isValid = false;
+    }
+    
+    // Validate max_news (only if switch is checked)
+    const max_news_switch = document.getElementById('max_news_switch');
+    const max_news = document.getElementById('max_news');
+    if (max_news_switch && max_news_switch.checked) {
+        if (!max_news.value || max_news.value.trim() === '') {
+            showFieldError('max_news', 'Por favor, informe o número máximo de notícias');
+            isValid = false;
+        } else if (isNaN(parseInt(max_news.value)) || parseInt(max_news.value) <= 0) {
+            showFieldError('max_news', 'Por favor, informe um número válido');
+            isValid = false;
+        }
+    }
+    
+    return isValid;
+}
+
 function mostrarDownload(event) {
     event.preventDefault();
+    
+    // Validate form before proceeding
+    if (!validateForm()) {
+        return;
+    }
     
     document.getElementById('downloadBtn').style.display = "none";
     console.log("bolas2")
@@ -336,6 +435,9 @@ setInterval(() => {
 }, 500)
 
 function yast_reset() {
+    // Clear all error messages
+    document.querySelectorAll('.field-error').forEach(error => error.remove());
+    
     // Clear tags
     tags_list = [];
     writeTags();
@@ -355,12 +457,16 @@ function yast_reset() {
     // Reset max news input and switch
     const max_news_switch = document.getElementById("max_news_switch");
     const max_news = document.getElementById("max_news");
+    const max_news_asterisk = document.getElementById("max_news_asterisk");
     if (max_news_switch) {
         max_news_switch.checked = false;
     }
     if (max_news) {
         max_news.value = "";
         max_news.disabled = true;
+    }
+    if (max_news_asterisk) {
+        max_news_asterisk.classList.remove("active");
     }
     
     // Reset class group select
@@ -423,6 +529,27 @@ function baixarArquivo() {
 
 window.onload = function() {
     document.getElementById('downloadBtn').addEventListener('click', baixarArquivo);
+    
+    // Add event listeners to clear errors when fields change
+    const media_outlet = document.getElementById('media_outlet');
+    if (media_outlet) {
+        media_outlet.addEventListener('change', () => clearFieldError('media_outlet'));
+    }
+    
+    const class_group = document.getElementById('class_group');
+    if (class_group) {
+        class_group.addEventListener('change', () => clearFieldError('class_group'));
+    }
+    
+    const max_news = document.getElementById('max_news');
+    if (max_news) {
+        max_news.addEventListener('input', () => clearFieldError('max_news'));
+    }
+    
+    const max_news_switch = document.getElementById('max_news_switch');
+    if (max_news_switch) {
+        max_news_switch.addEventListener('change', () => clearFieldError('max_news'));
+    }
 }
 
 

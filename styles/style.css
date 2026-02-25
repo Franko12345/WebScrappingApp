@@ -614,7 +614,7 @@ main{
     /* height: 600px; */
     display: flex;
     flex-direction: column;
-    width: 400px;
+    width: 450px;
     min-height: 550px;
     max-height: 600px;
     overflow: auto;
@@ -724,6 +724,47 @@ main{
     justify-content: center;
     border-radius: 5px;
     cursor: pointer;
+}
+
+/* Field Error Messages */
+.field-error {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 4px;
+    padding: 8px 12px;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+    animation: slideInError 0.3s ease-out;
+    display: flex;
+    align-items: center;
+}
+
+@keyframes slideInError {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Required Field Asterisks */
+.required-asterisk {
+    color: #dc3545;
+    margin-left: 4px;
+    font-weight: bold;
+}
+
+.required-asterisk.optional {
+    color: #6c757d;
+    transition: color 0.3s ease;
+}
+
+.required-asterisk.optional.active {
+    color: #dc3545;
 }
 
 #downloadBtn {

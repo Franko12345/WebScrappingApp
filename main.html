@@ -58,12 +58,12 @@
             <form id="search-form" onsubmit="mostrarDownload(event)">
                 <div id="form_content">
                     <div class="input_group">
-                        <label for="tags">Palavras-Chave</label>
+                        <label for="tags">Palavras-Chave<span class="required-asterisk">*</span></label>
                         <input id="tags_selector" name="tags" type="text" placeholder="Digite as palavras-chave de busca" onkeydown="handleTagInput(event)">
                         <div id="tags"></div>
                     </div>
                     <div class="input_group">
-                        <label for="media_outlet">Veículo de Notícia</label>
+                        <label for="media_outlet">Veículo de Notícia<span class="required-asterisk">*</span></label>
                         <select name="media_outlet" id="media_outlet">
                             <button>
                                 <selectedcontent></selectedcontent>
@@ -101,7 +101,7 @@
                         </select>
                     </div>
                     <div class="input_group">
-                        <label for="class_group">Grupo de Categorias</label>
+                        <label for="class_group">Grupo de Categorias<span class="required-asterisk">*</span></label>
                         <!-- <select name="class_group" id="class_group" class="classes_select">
                             <button>
                                 <selectedcontent> </selectedcontent>
@@ -132,7 +132,7 @@
                         </select>
                     </div>
                     <div class="input_group">
-                        <label for="max_news">Número Máximo de Notícias</label>
+                        <label for="max_news">Número Máximo de Notícias<span id="max_news_asterisk" class="required-asterisk optional">*</span></label>
                         <div id="max_news_container">
                             <label class="switch">
                                 <input id="max_news_switch" type="checkbox">
