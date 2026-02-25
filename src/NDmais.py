@@ -102,18 +102,52 @@ def getNewsByTags(tags):
             # Try to load more content for next iteration
             if page < tags[tag] - 1:
                 try:
-                    ActionChains(driver).scroll_by_amount(0, 10000).perform()
-                    
                     import time
+                    
+                    # Scroll to bottom to ensure button is visible
+                    driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                     time.sleep(1)
                     
-                    WebDriverWait(driver, 10).until( EC.presence_of_element_located( (By.CSS_SELECTOR, "a[title=\"Veja Mais\"]") ) )
-                                    
-                    driver.find_element(By.CSS_SELECTOR, "a[title=\"Veja Mais\"]").click()
-
-                    WebDriverWait(driver, 10).until_not( EC.visibility_of_element_located( (By.CSS_SELECTOR, "i[class=\"button-icon fas fa-spin fa-sync nd-fa-loaded\"]") ) )
+                    # Wait for the button to be present
+                    button = WebDriverWait(driver, 10).until(
+                        EC.presence_of_element_located((By.CSS_SELECTOR, "button.ajax-pagination-button, button[title='Veja mais']"))
+                    )
+                    
+                    # Scroll the button into view using JavaScript
+                    driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", button)
+                    time.sleep(1)
+                    
+                    # Wait a bit more for any overlays to disappear
+                    time.sleep(0.5)
+                    
+                    # Get current number of articles before clicking
+                    current_article_count = len(driver.find_elements(By.CSS_SELECTOR, "div.site-card-content"))
+                    
+                    # Use JavaScript click to avoid interception issues
+                    driver.execute_script("arguments[0].click();", button)
+                    
+                    # Wait for new articles to be loaded (AJAX call completes)
+                    # Wait until the number of articles increases or a timeout occurs
+                    try:
+                        WebDriverWait(driver, 15).until(
+                            lambda d: len(d.find_elements(By.CSS_SELECTOR, "div.site-card-content")) > current_article_count
+                        )
+                    except:
+                        # If no new articles appear, the page might be fully loaded
+                        # Check if button still exists (if not, we've reached the end)
+                        try:
+                            driver.find_element(By.CSS_SELECTOR, "button.ajax-pagination-button")
+                            # Button still exists but no new content - might be loading or error
+                            time.sleep(2)
+                        except:
+                            # Button doesn't exist anymore - page fully loaded
+                            pass
+                    
+                    # Additional small wait to ensure all content is rendered
+                    time.sleep(1)
+                    
                 except Exception as e:
-                    print(f"Page {tag} carregada completamente")
+                    print(f"Page {tag} carregada completamente ou erro ao carregar mais: {str(e)}")
                     break
 
     return allNews
