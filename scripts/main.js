@@ -335,6 +335,67 @@ setInterval(() => {
         
 }, 500)
 
+function yast_reset() {
+    // Clear tags
+    tags_list = [];
+    writeTags();
+    
+    // Reset tags input
+    const tags_selector = document.getElementById("tags_selector");
+    if (tags_selector) {
+        tags_selector.value = "";
+    }
+    
+    // Reset media outlet select
+    const media_outlet = document.getElementById("media_outlet");
+    if (media_outlet) {
+        media_outlet.value = "_";
+    }
+    
+    // Reset max news input and switch
+    const max_news_switch = document.getElementById("max_news_switch");
+    const max_news = document.getElementById("max_news");
+    if (max_news_switch) {
+        max_news_switch.checked = false;
+    }
+    if (max_news) {
+        max_news.value = "";
+        max_news.disabled = true;
+    }
+    
+    // Reset class group select
+    const class_group = document.getElementById("class_group");
+    if (class_group) {
+        class_group.value = "_";
+    }
+    
+    // Clear checkDownload interval
+    if (checkDownload) {
+        clearInterval(checkDownload);
+        checkDownload = 0;
+    }
+    
+    // Hide download button
+    const downloadBtn = document.getElementById("downloadBtn");
+    if (downloadBtn) {
+        downloadBtn.style.display = "none";
+    }
+    
+    // Reset submit button text
+    const submit = document.getElementById("submit");
+    if (submit) {
+        submit.textContent = "Buscar";
+    }
+    
+    // Hide wifi loader
+    const wifi_loader = document.getElementById("wifi-loader");
+    if (wifi_loader) {
+        wifi_loader.style.display = "none";
+    }
+    
+    console.log("App reset to default state");
+}
+
 function baixarArquivo() {
     // Faz requisição para a API para obter o arquivo
     fetch("http://127.0.0.1:5555/file")
@@ -351,6 +412,9 @@ function baixarArquivo() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+        
+        // Reset app after download completes
+        yast_reset();
     })
     .catch(error => {
         console.error('Erro ao baixar arquivo:', error);
