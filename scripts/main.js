@@ -206,10 +206,89 @@ function delTag(tag){
 function handleTagInput(key) {
     let tags_selector = document.getElementById("tags_selector")
     if (key.code === 'Space' || key.code === 'Enter' || key.code === "Tab") {
-        addTag(tags_selector.value.trim())
-        writeTags()
-        tags_selector.value = ""
-        clearFieldError('tags_selector')
+        key.preventDefault();
+        const tagValue = tags_selector.value.trim();
+        
+        if (key.code === 'Enter') {
+            // If Enter is pressed
+            if (tagValue) {
+                // If there's text, add the tag and stay in field
+                addTag(tagValue);
+                writeTags();
+                tags_selector.value = "";
+                clearFieldError('tags_selector');
+            } else {
+                // If no text, move to next field
+                moveToNextField('tags_selector');
+            }
+        } else {
+            // For Space and Tab, add tag if there's text
+            if (tagValue) {
+                addTag(tagValue);
+                writeTags();
+                tags_selector.value = "";
+                clearFieldError('tags_selector');
+            }
+        }
+    }
+}
+
+function moveToNextField(currentFieldId) {
+    // Define the order of fields
+    const fieldOrder = [
+        'tags_selector',
+        'media_outlet',
+        'class_group',
+        'max_news',
+        'submit'
+    ];
+    
+    const currentIndex = fieldOrder.indexOf(currentFieldId);
+    if (currentIndex === -1) return;
+    
+    // Get next field index
+    const nextIndex = currentIndex + 1;
+    
+    // If we're at the last field (max_news), focus submit button
+    if (nextIndex === fieldOrder.length - 1) {
+        const submitButton = document.getElementById('submit');
+        if (submitButton) {
+            submitButton.focus();
+        }
+        return;
+    }
+    
+    // If we're at submit button, don't do anything (form will submit)
+    if (currentFieldId === 'submit') {
+        return;
+    }
+    
+    // Focus next field
+    const nextFieldId = fieldOrder[nextIndex];
+    const nextField = document.getElementById(nextFieldId);
+    
+    if (nextField) {
+        // For max_news, check if it's enabled
+        if (nextFieldId === 'max_news') {
+            const maxNewsSwitch = document.getElementById('max_news_switch');
+            if (maxNewsSwitch && !maxNewsSwitch.checked) {
+                // If max_news is disabled, skip to submit button
+                const submitButton = document.getElementById('submit');
+                if (submitButton) {
+                    submitButton.focus();
+                }
+                return;
+            }
+        }
+        nextField.focus();
+        
+        // For select elements, we might want to open them
+        if (nextField.tagName === 'SELECT') {
+            // Try to trigger click to open dropdown (browser dependent)
+            setTimeout(() => {
+                nextField.click();
+            }, 10);
+        }
     }
 }
 
@@ -534,21 +613,71 @@ window.onload = function() {
     const media_outlet = document.getElementById('media_outlet');
     if (media_outlet) {
         media_outlet.addEventListener('change', () => clearFieldError('media_outlet'));
+        // Handle Enter key to move to next field
+        media_outlet.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                moveToNextField('media_outlet');
+            }
+        });
     }
     
     const class_group = document.getElementById('class_group');
     if (class_group) {
         class_group.addEventListener('change', () => clearFieldError('class_group'));
+        // Handle Enter key to move to next field
+        class_group.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                moveToNextField('class_group');
+            }
+        });
     }
     
     const max_news = document.getElementById('max_news');
     if (max_news) {
         max_news.addEventListener('input', () => clearFieldError('max_news'));
+        // Handle Enter key to move to submit button
+        max_news.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                moveToNextField('max_news');
+            }
+        });
     }
     
     const max_news_switch = document.getElementById('max_news_switch');
     if (max_news_switch) {
         max_news_switch.addEventListener('change', () => clearFieldError('max_news'));
+    }
+    
+    // Prevent form submission on Enter in input fields (except submit button)
+    const form = document.getElementById('search-form');
+    if (form) {
+        form.addEventListener('keydown', (e) => {
+            // Only prevent if Enter is pressed and focus is not on submit button
+            if (e.key === 'Enter' && e.target.id !== 'submit' && e.target.tagName !== 'BUTTON') {
+                // Let the individual field handlers manage the behavior
+                // This prevents default form submission
+                if (e.target.id !== 'tags_selector' && 
+                    e.target.id !== 'media_outlet' && 
+                    e.target.id !== 'class_group' && 
+                    e.target.id !== 'max_news') {
+                    e.preventDefault();
+                }
+            }
+        });
+    }
+    
+    // Handle Enter on submit button to submit form
+    const submitButton = document.getElementById('submit');
+    if (submitButton) {
+        submitButton.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                // Let the form submit naturally
+                // The form's onsubmit handler will validate
+            }
+        });
     }
 }
 
