@@ -44,6 +44,8 @@ def getNewsByTags(tags):
     global driver
     global max_news
     allNews = []
+    resetCounter = 0
+    lastNewsNumber = 0
 
     pageCounter = 0
     for tag in tags.keys():
@@ -88,9 +90,19 @@ def getNewsByTags(tags):
 
             pageCounter += 1
 
-            if len(allNews)-currentNewsNum > max_news:
-                allNews = allNews[:currentNewsNum+max_news]
-                break
+            if max_news != -1:
+                if len(allNews)-currentNewsNum > max_news:
+                    allNews = allNews[:currentNewsNum+max_news]
+                    break
+
+            if(lastNewsNumber != len(allNews)):
+                lastNewsNumber = len(allNews)
+                resetCounter = 0
+            else:
+                resetCounter += 1
+            
+            if resetCounter == 5:
+                return allNews            
 
     return allNews
 
