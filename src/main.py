@@ -15,6 +15,13 @@ from uvicorn import run as uvi_run
 from webview import settings as webview_settings
 from webview import start as webview_start
 from webview import create_window
+try:
+    from src.version_check import check_update_available
+except ImportError:
+    # Fallback for when running as script
+    import sys
+    sys.path.insert(0, str(Path(__file__).parent))
+    from version_check import check_update_available
 
 # Handle PyInstaller bundle path
 if getattr(sys, 'frozen', False):
@@ -110,6 +117,94 @@ def get_busy():
         Busy = False
     
     return Busy
+
+@app.get("/check-update")
+def check_update(test: bool = False):
+    """Check if an update is available by comparing local and GitHub versions.
+    
+    Args:
+        test: If True, force return update_available=True for testing
+    """
+    try:
+        if test:
+            # Test mode - force update available
+            result = check_update_available()
+            result['update_available'] = True
+            result['test_mode'] = True
+            print(f"TEST MODE: Forcing update available")
+            return result
+        
+        result = check_update_available()
+        print(f"Version check result: {result}")  # Debug logging
+        print(f"Local version: {result.get('local_version')}, Remote version: {result.get('remote_version')}")
+        print(f"Update available: {result.get('update_available')}")
+        return result
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return {
+            'update_available': False,
+            'local_version': None,
+            'remote_version': None,
+            'error': str(e)
+        }
+
+@app.post("/run-installer")
+def run_installer():
+    """Run YastInstaller.exe to update the application."""
+    try:
+        # Try multiple possible paths for YastInstaller.exe
+        possible_paths = [
+            EXE_DIR / "YastInstaller.exe",  # Next to main.exe
+            Path.cwd() / "YastInstaller.exe",  # Current working directory
+        ]
+        
+        # If not running as executable, also check relative to script location
+        if not getattr(sys, 'frozen', False):
+            possible_paths.append(Path(__file__).parent.parent / "YastInstaller.exe")
+        
+        installer_path = None
+        for path in possible_paths:
+            if path.exists():
+                installer_path = path
+                print(f"Found installer at: {installer_path}")
+                break
+        
+        if not installer_path or not installer_path.exists():
+            return {
+                "status": "fail",
+                "message": f"YastInstaller.exe not found. Tried: {[str(p) for p in possible_paths]}"
+            }
+        
+        # Run the installer
+        if sys.platform == 'win32':
+            # On Windows, use CREATE_NEW_CONSOLE to show installer window
+            process = subprocess.Popen(
+                [str(installer_path)],
+                creationflags=subprocess.CREATE_NEW_CONSOLE,
+                cwd=str(installer_path.parent)
+            )
+            print(f"Installer started with PID: {process.pid}")
+        else:
+            # On other platforms, run normally
+            process = subprocess.Popen(
+                [str(installer_path)],
+                cwd=str(installer_path.parent)
+            )
+            print(f"Installer started with PID: {process.pid}")
+        
+        return {
+            "status": "success",
+            "message": "Installer started successfully"
+        }
+    except Exception as e:
+        print(f"ERROR starting installer: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "status": "fail",
+            "message": f"Error starting installer: {e}"
+        }
 
 script_table = {
     "G1": "g1",

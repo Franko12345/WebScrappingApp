@@ -67,6 +67,31 @@
         </div>
     </div>
     
+    <!-- Update available popup -->
+    <div id="update_available_popup" class="floating-confirm-popup center-popup" style="display: none;">
+        <div class="popup-content">
+            <p id="update_popup_message">Uma nova versão está disponível! Deseja atualizar agora?</p>
+            <div class="popup-buttons">
+                <button class="popup-btn confirm-btn" onclick="confirmUpdate()" style="min-width: 80px;">
+                    <span style="margin-right: 5px;">Sim</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </button>
+                <button class="popup-btn cancel-btn" onclick="cancelUpdate()" style="min-width: 80px;">
+                    <span style="margin-right: 5px;">Não</span>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Overlay for popups -->
+    <div id="overlay" style="display: none;"></div>
+    
     <main>
         <div id="form-header">
             <div id="home_tab" class="icons_containers selected" onclick={switchTabs(0)}>

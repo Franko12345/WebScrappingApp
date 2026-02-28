@@ -14,6 +14,7 @@ tqdm>=4.65.0
 wget>=3.2
 pywin32
 certifi
+requests>=2.31.0
 
 # Built-in modules (no installation needed):
 # sys, os, subprocess, time, zipfile

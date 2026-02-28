@@ -927,8 +927,116 @@ function baixarArquivo() {
     });
 }
 
+// Version check functions
+function checkForUpdates(testMode = false) {
+    console.log('Checking for updates...', testMode ? '(TEST MODE)' : '');
+    const url = testMode ? 'http://localhost:5555/check-update?test=true' : 'http://localhost:5555/check-update';
+    
+    // Verify elements exist before making request
+    const popup = document.getElementById('update_available_popup');
+    const overlay = document.getElementById('overlay');
+    const messageEl = document.getElementById('update_popup_message');
+    
+    console.log('Popup elements check:', {
+        popup: !!popup,
+        overlay: !!overlay,
+        messageEl: !!messageEl
+    });
+    
+    if (!popup || !overlay || !messageEl) {
+        console.error('Required popup elements not found! Popup:', popup, 'Overlay:', overlay, 'Message:', messageEl);
+        return;
+    }
+    
+    fetch(url)
+        .then(response => {
+            console.log('Update check response status:', response.status);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Update check data:', data);
+            if (data.update_available) {
+                const message = `Nova versão disponível!\n\nVersão atual: ${data.local_version || 'Desconhecida'}\nVersão disponível: ${data.remote_version}\n\nDeseja atualizar agora?`;
+                messageEl.textContent = message;
+                console.log('Showing update popup with message:', message);
+                showUpdatePopup();
+            } else {
+                console.log('No update available. Local:', data.local_version, 'Remote:', data.remote_version);
+                if (data.error) {
+                    console.warn('Version check error:', data.error);
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao verificar atualizações:', error);
+            // Silently fail - don't show error to user
+        });
+}
+
+// Test function - call checkForUpdates(true) in browser console to test popup
+window.testUpdatePopup = function() {
+    checkForUpdates(true);
+};
+
+function showUpdatePopup() {
+    const popup = document.getElementById('update_available_popup');
+    const overlay = document.getElementById('overlay');
+    console.log('showUpdatePopup called, popup:', popup, 'overlay:', overlay);
+    if (popup && overlay) {
+        popup.style.display = 'block';
+        overlay.style.display = 'block';
+        console.log('Popup and overlay displayed');
+    } else {
+        console.error('Popup or overlay not found!');
+    }
+}
+
+function hideUpdatePopup() {
+    const popup = document.getElementById('update_available_popup');
+    const overlay = document.getElementById('overlay');
+    if (popup && overlay) {
+        popup.style.display = 'none';
+        overlay.style.display = 'none';
+    }
+}
+
+function confirmUpdate() {
+    hideUpdatePopup();
+    // Call backend to run installer
+    fetch('http://localhost:5555/run-installer', {
+        method: 'POST'
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Close the application after a short delay
+                setTimeout(() => {
+                    window.close();
+                }, 1000);
+            } else {
+                alert('Erro ao iniciar atualização: ' + (data.message || 'Erro desconhecido'));
+            }
+        })
+        .catch(error => {
+            console.error('Erro ao executar instalador:', error);
+            alert('Erro ao iniciar atualização. Por favor, execute YastInstaller.exe manualmente.');
+        });
+}
+
+function cancelUpdate() {
+    hideUpdatePopup();
+}
+
 window.onload = function() {
     document.getElementById('downloadBtn').addEventListener('click', baixarArquivo);
+    
+    // Check for updates on first boot (with small delay to ensure DOM is ready)
+    setTimeout(() => {
+        checkForUpdates();
+    }, 500);
     
     // Add event listeners to clear errors when fields change
     const media_outlet = document.getElementById('media_outlet');
@@ -1005,12 +1113,21 @@ window.onload = function() {
     document.addEventListener('click', (e) => {
         const newGroupPopup = document.getElementById('confirm_new_group_popup')
         const exitPopup = document.getElementById('confirm_exit_categories_popup')
+        const updatePopup = document.getElementById('update_available_popup')
         const addClassGroupBtn = document.getElementById('add_classGroup')
         
         // Close new group popup if clicking outside
         if (newGroupPopup && newGroupPopup.style.display === 'block') {
             if (!newGroupPopup.contains(e.target) && !addClassGroupBtn.contains(e.target)) {
                 cancelNewGroup()
+            }
+        }
+        
+        // Close update popup if clicking outside (on overlay)
+        if (updatePopup && updatePopup.style.display === 'block') {
+            const overlay = document.getElementById('overlay')
+            if (overlay && e.target === overlay) {
+                cancelUpdate()
             }
         }
     })
