@@ -52,7 +52,10 @@ def getNewsByTags(tags):
         currentNewsNum = len(allNews)
         news = []
 
-        for page in range(tags[tag]):
+        page = 0
+        while(True):
+            page += 1
+            max_page = tags[tag]
             if pageCounter % 10 == 0:
                 print(f"\nPlanilha salva com {len(allNews)} notícias para backup...")
                 storeAsExcel(allNews)
@@ -62,7 +65,7 @@ def getNewsByTags(tags):
 
             while not acessed:
                 try:
-                    driver.get(f"https://www.terra.com.br/busca/?q={tag}#gsc.tab=1&gsc.q={tag}&gsc.page={page+1}")
+                    driver.get(f"https://www.terra.com.br/busca/?q={tag}#gsc.tab=1&gsc.q={tag}&gsc.page={page}")
                     acessed = True
                 except:
                     print("Erro ao acessar a página, reiniciando navegador...")
@@ -101,7 +104,7 @@ def getNewsByTags(tags):
             else:
                 resetCounter += 1
             
-            if resetCounter == 5:
+            if resetCounter == 5 or page == max_page:
                 return allNews            
 
     return allNews

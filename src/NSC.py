@@ -47,12 +47,17 @@ def getNewsByTags(tags):
     global driver
     global max_news
     allNews = []
+    resetCounter = 0
+    lastNewsNumber = 0
 
     pageCounter = 0
     for tag in tags.keys():
         currentNewsNum = len(allNews)
 
-        for page in range(tags[tag]):
+        page = 0
+        while(True):
+            page += 1
+            max_page = tags[tag]
             if pageCounter % 10 == 0:
                 print(f"\nPlanilha salva com {len(allNews)} notícias para backup...")
                 storeAsExcel(allNews)
@@ -87,10 +92,19 @@ def getNewsByTags(tags):
 
             pageCounter += 1
 
-
-            if len(allNews)-currentNewsNum > max_news:
-                allNews = allNews[:currentNewsNum+max_news]
-                break
+            if max_news != -1:
+                if len(allNews)-currentNewsNum > max_news:
+                    allNews = allNews[:currentNewsNum+max_news]
+                    break
+            
+            if(lastNewsNumber != len(allNews)):
+                lastNewsNumber = len(allNews)
+                resetCounter = 0
+            else:
+                resetCounter += 1
+            
+            if resetCounter == 5 or page == max_page:
+                return allNews   
 
     return allNews
 
