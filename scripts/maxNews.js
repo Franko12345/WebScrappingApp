@@ -22,7 +22,7 @@ switchEl.addEventListener("change", () => {
     maxNewsInput.disabled = !switchEl.checked;
 
     if (maxNewsInput.disabled) {
-        maxNewsInput.value = "50"; // clear when disabled (optional)
+        maxNewsInput.value = "-1";
     }
     
     updateAsteriskColor();
