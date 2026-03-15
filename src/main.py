@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import sys
 import subprocess
 import time
@@ -148,14 +149,33 @@ def _get_categories_for_group(classes_groups: dict, group_key: str):
 
 def _normalize_label(text: str, valid_names: set) -> str:
     """Map model output to a valid category name or NAO_SE_ENCAIXA."""
-    text = (text or "").strip()
+    if not text:
+        return NAO_SE_ENCAIXA
+    # Strip leading numbering (e.g. "1. Previsão", "2) Passado", "3 - Histórico")
+    text = re.sub(r"^\s*\d+[\.\)\-]\s*", "", (text or "").strip()).strip()
+    if not text:
+        return NAO_SE_ENCAIXA
     if text in valid_names:
         return text
-    if NAO_SE_ENCAIXA in text or not text:
+    if NAO_SE_ENCAIXA in text:
         return NAO_SE_ENCAIXA
+    text_lower = text.lower()
     for name in valid_names:
-        if name in text:
+        if name in text or name.lower() in text_lower:
             return name
+    # Model may output "Alerta" when Previsão description says "Alertas e previsão"
+    if "alerta" in text_lower or "previsao" in text_lower:
+        for name in valid_names:
+            if name.lower() in ("previsão", "previsao"):
+                return name
+    if "passado" in text_lower:
+        for name in valid_names:
+            if name.lower() == "passado":
+                return name
+    if "histórico" in text_lower or "historico" in text_lower:
+        for name in valid_names:
+            if name.lower() in ("histórico", "historico"):
+                return name
     return NAO_SE_ENCAIXA
 
 
@@ -178,12 +198,15 @@ def _classify_news_batch(
     )
     system_instruction = f"""Você é um classificador de notícias. Para cada notícia listada, escolha exatamente UMA categoria.
 
-Categorias disponíveis (use apenas o nome exato):
+Categorias disponíveis (use APENAS um destes nomes, exatamente como estão):
 {categories_text}
 
-Se uma notícia não se encaixar em nenhuma categoria, use exatamente: {NAO_SE_ENCAIXA}
+Regras:
+- Use a categoria de ALERTAS/PREVISÃO (ex.: Previsão) para: (1) previsão do tempo para os próximos dias; (2) alertas em vigor, avisos meteorológicos atuais, situações de risco no momento; (3) notícias sobre o que está ocorrendo AGORA ou em andamento (ex.: "emite alerta", "entra em alerta", "segue em alerta", "coloca em alerta", "em alerta para", risco atual, fenômeno ocorrendo no presente). Tudo isso é alerta/previsão.
+- Use a categoria de eventos PASSADOS (ex.: Passado) apenas para relatos de eventos já concluídos (estragos que já aconteceram, cobertura pós-evento, "atingiu", "deixou rastro", "após a chuva").
+- Só use "{NAO_SE_ENCAIXA}" se a notícia não se encaixar em nenhuma categoria listada.
 
-IMPORTANTE: Responda com UMA LINHA por notícia, na mesma ordem (notícia 1 = linha 1, notícia 2 = linha 2, etc). Em cada linha escreva APENAS o nome da categoria ou "{NAO_SE_ENCAIXA}". Nada mais."""
+IMPORTANTE: Responda com UMA LINHA por notícia, na mesma ordem (notícia 1 = linha 1, notícia 2 = linha 2). Em cada linha escreva APENAS o nome da categoria ou "{NAO_SE_ENCAIXA}". Nada mais."""
 
     result_labels: list[str] = []
     for start in range(0, len(items), CLASSIFY_BATCH_SIZE):

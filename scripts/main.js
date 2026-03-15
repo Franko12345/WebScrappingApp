@@ -24,7 +24,7 @@ const DEFAULT_CLASS_GROUP = {
     },
     class_3: {
         name: "Previsão",
-        description: "Alertas e previsão do tempo: avisos meteorológicos, orientações para os próximos dias, previsão de chuvas fortes."
+        description: "Alertas e previsão do tempo: avisos meteorológicos em vigor, situações de risco no momento, previsões para os próximos dias, e notícias sobre fenômenos que estão ocorrendo no presente (ex.: emite alerta, entra em alerta, segue em alerta, em alerta para)."
     }
 }
 
@@ -791,16 +791,14 @@ function CheckDownload(){
 
     fetch_news("/finished", "GET").then((r) => {
         if (!r) return
-        if (classificationRequested) {
-            document.getElementById('downloadBtn').style.display = "flex"
-            return
-        }
-        classificationRequested = true
+        // If we already sent classify and are waiting for response, do not show button yet
+        if (classificationRequested) return
         const classGroup = lastSearchClassGroup || document.getElementById('class_group').value
         if (!classGroup || classGroup === '_') {
             document.getElementById('downloadBtn').style.display = "flex"
             return
         }
+        classificationRequested = true
         fetch(API_BASE + "/classify", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -812,12 +810,12 @@ function CheckDownload(){
                     document.getElementById('downloadBtn').style.display = "flex"
                 } else {
                     console.warn("Classificação falhou:", data.message || data)
-                    document.getElementById('downloadBtn').style.display = "flex"
+                    classificationRequested = false
                 }
             })
             .catch((err) => {
                 console.warn("Erro ao classificar:", err)
-                document.getElementById('downloadBtn').style.display = "flex"
+                classificationRequested = false
             })
     })
 }
