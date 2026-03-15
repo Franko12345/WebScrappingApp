@@ -6,6 +6,8 @@ from pathlib import Path
 from signal import SIGTERM
 from threading import Thread
 
+import pandas as pd
+import requests
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -110,6 +112,149 @@ def save_config(payload: AppConfigPayload):
     except Exception as e:
         print(f"Error writing config: {e}")
         return {"status": "error", "message": str(e)}
+
+
+# --- News classification with Gemini ---
+GEMINI_MODEL = "gemini-1.5-flash"
+GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
+NAO_SE_ENCAIXA = "Não se encaixa em nenhuma classificação"
+
+
+def _get_categories_for_group(classes_groups: dict, group_key: str):
+    """Return list of (name, description) for the given group."""
+    group = classes_groups.get(group_key) or {}
+    categories = []
+    for key, value in group.items():
+        if key == "name":
+            continue
+        if isinstance(value, dict) and "name" in value:
+            name = value.get("name", "").strip()
+            desc = (value.get("description") or "").strip()
+            if name:
+                categories.append((name, desc))
+    return categories
+
+
+def _classify_news_with_gemini(
+    api_key: str,
+    title: str,
+    content: str,
+    categories: list[tuple[str, str]],
+) -> str:
+    """Call Gemini API to classify one news item. Returns category name or NAO_SE_ENCAIXA."""
+    if not api_key or not categories:
+        return NAO_SE_ENCAIXA
+
+    categories_text = "\n".join(
+        f"- **{name}**: {desc}" if desc else f"- **{name}**"
+        for name, desc in categories
+    )
+    prompt = f"""Classifique a seguinte notícia em exatamente UMA das categorias abaixo.
+Responda APENAS com o nome exato da categoria (como está na lista). Não inclua ponto final nem texto extra.
+Se a notícia não se encaixar em nenhuma categoria, responda exatamente: {NAO_SE_ENCAIXA}
+
+Categorias disponíveis:
+{categories_text}
+
+Notícia:
+Título: {title}
+Conteúdo: {content[:1500] if content else '(sem conteúdo)'}
+
+Sua resposta (apenas o nome da categoria ou "{NAO_SE_ENCAIXA}"):"""
+
+    try:
+        resp = requests.post(
+            GEMINI_URL,
+            headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
+            json={
+                "contents": [{"parts": [{"text": prompt}]}],
+                "generationConfig": {
+                    "temperature": 0.1,
+                    "maxOutputTokens": 64,
+                },
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+        text = (
+            (data.get("candidates") or [{}])[0]
+            .get("content", {})
+            .get("parts", [{}])[0]
+            .get("text", "")
+        )
+        text = (text or "").strip()
+        # Normalize: only the category name or the exact fallback
+        valid_names = {name for name, _ in categories}
+        if text in valid_names:
+            return text
+        if NAO_SE_ENCAIXA in text or not text:
+            return NAO_SE_ENCAIXA
+        # Try to match one of the category names in the response
+        for name in valid_names:
+            if name in text:
+                return name
+        return NAO_SE_ENCAIXA
+    except Exception as e:
+        print(f"Gemini classification error: {e}")
+        return NAO_SE_ENCAIXA
+
+
+class ClassifyPayload(BaseModel):
+    class_group: str
+
+
+@app.post("/classify")
+def run_classification(payload: ClassifyPayload):
+    """Run Gemini classification on result.xlsx using the selected group. Adds column 'Classificação'."""
+    local_appdata = Path(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")))
+    result_path = local_appdata / "Yast" / "result" / "result.xlsx"
+    if not result_path.exists():
+        return {"status": "error", "message": "Arquivo result.xlsx não encontrado."}
+
+    path = _get_config_path()
+    if not path.exists():
+        return {"status": "error", "message": "Configuração não encontrada."}
+    with open(path, "r", encoding="utf-8") as f:
+        config = json.load(f)
+    api_key = (config.get("gemini_api_key") or "").strip()
+    classes_groups = config.get("classes_groups") or {}
+    categories = _get_categories_for_group(classes_groups, payload.class_group)
+    if not categories:
+        return {"status": "error", "message": "Nenhuma classificação encontrada para o grupo selecionado."}
+
+    try:
+        df = pd.read_excel(result_path, engine="openpyxl")
+    except Exception as e:
+        return {"status": "error", "message": f"Erro ao ler planilha: {e}"}
+
+    # Detect title and content columns (Portuguese or English)
+    title_col = None
+    content_col = None
+    for c in df.columns:
+        c_lower = str(c).lower()
+        if c_lower in ("título", "titulo", "title"):
+            title_col = c
+        if c_lower in ("conteúdo", "conteudo", "content"):
+            content_col = c
+    if title_col is None:
+        title_col = df.columns[0] if len(df.columns) else None
+    if content_col is None:
+        content_col = ""
+
+    classifications = []
+    for idx, row in df.iterrows():
+        title = str(row.get(title_col, "") or "")
+        content = str(row.get(content_col, "") or "") if content_col else ""
+        label = _classify_news_with_gemini(api_key, title, content, categories)
+        classifications.append(label)
+
+    df["Classificação"] = classifications
+    try:
+        df.to_excel(result_path, index=False, engine="openpyxl")
+    except Exception as e:
+        return {"status": "error", "message": f"Erro ao salvar planilha: {e}"}
+    return {"status": "ok"}
 
 
 Busy = False

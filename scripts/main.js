@@ -758,19 +758,45 @@ function fetch_news(path, method, requestData={}){
 }
 
 checkDownload = 0
+let classificationRequested = false
+let lastSearchClassGroup = null
+
 function CheckDownload(){
-    console.log("checking")
     if (document.getElementById('downloadBtn').checkVisibility()) {
-        console.log("ok")
         clearInterval(checkDownload)
-        return 
+        return
     }
 
     fetch_news("/finished", "GET").then((r) => {
-        if (r){
-            document.getElementById('downloadBtn').style.display = "flex";
-            console.log("bolas")
+        if (!r) return
+        if (classificationRequested) {
+            document.getElementById('downloadBtn').style.display = "flex"
+            return
         }
+        classificationRequested = true
+        const classGroup = lastSearchClassGroup || document.getElementById('class_group').value
+        if (!classGroup || classGroup === '_') {
+            document.getElementById('downloadBtn').style.display = "flex"
+            return
+        }
+        fetch(API_BASE + "/classify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ class_group: classGroup })
+        })
+            .then((res) => res.json())
+            .then((data) => {
+                if (data.status === "ok") {
+                    document.getElementById('downloadBtn').style.display = "flex"
+                } else {
+                    console.warn("Classificação falhou:", data.message || data)
+                    document.getElementById('downloadBtn').style.display = "flex"
+                }
+            })
+            .catch((err) => {
+                console.warn("Erro ao classificar:", err)
+                document.getElementById('downloadBtn').style.display = "flex"
+            })
     })
 }
 
@@ -873,6 +899,8 @@ function mostrarDownload(event) {
     
     document.getElementById('downloadBtn').style.display = "none";
     console.log("bolas2")
+    classificationRequested = false
+    lastSearchClassGroup = document.getElementById('class_group').value
 
     const palavra = tags_list.join(" ");
     const media_outlet = document.getElementById('media_outlet').value;
@@ -954,7 +982,9 @@ function yast_reset() {
         clearInterval(checkDownload);
         checkDownload = 0;
     }
-    
+    classificationRequested = false;
+    lastSearchClassGroup = null;
+
     // Hide download button
     const downloadBtn = document.getElementById("downloadBtn");
     if (downloadBtn) {
