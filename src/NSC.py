@@ -38,11 +38,26 @@ driver = webdriver.Chrome(options=options)
 driver.set_page_load_timeout(25)
 
 def articleFormatter(article, tag):
+    # Article is a BeautifulSoup Tag; use .get() and .get_text(), not .get_attribute_list()
+    a = article.find("a", href=True)
+    link = (a.get("href") or "").strip() if a else ""
+    h3 = article.find("h3")
+    title_from_h3 = (h3.get_text(strip=True) if h3 else "") or ""
+    title_from_link = (a.get("title") or (a.get_text(strip=True) if a else "") or "").strip() if a else ""
+    # Prefer headline that is not just the tag name (e.g. "nsc") or too short
+    if title_from_h3 and title_from_h3.lower() != tag.lower() and len(title_from_h3) > 3:
+        title = title_from_h3
+    elif title_from_link and title_from_link.lower() != tag.lower() and len(title_from_link) > 3:
+        title = title_from_link
+    else:
+        title = title_from_h3 or title_from_link
+    date_el = article.find("div", class_="date")
+    data = (date_el.get_text(strip=True) if date_el else "") or ""
     return {
-        "title": article.find("h3").text.strip(),
-        "link" : article.find("a").get_attribute_list("href")[0],
-        "data" : article.find("div", class_="date").text.strip(),
-        "tag"  : tag
+        "title": title,
+        "link": link,
+        "data": data,
+        "tag": tag
     }
 
 def getNewsByTags(tags):

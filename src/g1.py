@@ -91,8 +91,15 @@ def _parse_cards_from_page(driver, seen_links, scraped_data, num_items, pbar):
             title_el = block.find("div", class_="widget--info__title") or block.find("div", class_=lambda c: c and "widget--info__title" in str(c))
             meta_el = block.find("div", class_="widget--info__meta") or block.find("div", class_=lambda c: c and "widget--info__meta" in str(c))
             desc_el = block.find("p", class_="widget--info__description") or block.find("p", class_=lambda c: c and "widget--info__description" in str(c))
+            title_from_el = (title_el.get_text(strip=True) if title_el else "") or ""
+            title_from_link = (a.get_text(strip=True) if a else "") or ""
+            # Prefer link text when title div is missing or is just "G1" (brand)
+            if title_from_el and title_from_el.strip().lower() != "g1":
+                title_final = title_from_el
+            else:
+                title_final = title_from_link or title_from_el
             noticia = {
-                "title": (title_el or a).get_text(strip=True),
+                "title": title_final,
                 "link": link,
                 "data": meta_el.get_text(strip=True) if meta_el else "",
                 "content": desc_el.get_text(strip=True) if desc_el else ""

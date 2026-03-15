@@ -34,10 +34,30 @@ options.page_load_strategy = 'eager'
 driver = webdriver.Chrome(options=options)
 
 def articleFormatter(article, tag):
+    # Prefer the main article link (href to ndmais with path), not logo/category. Use BeautifulSoup API.
+    links = article.find_all("a", href=True)
+    article_link = None
+    for a in links:
+        href = a.get("href") or ""
+        if "ndmais.com.br" in href and len(href) > 30:
+            article_link = a
+            break
+    if not article_link and links:
+        article_link = links[0]
+    title = ""
+    link = ""
+    if article_link:
+        title = (article_link.get("title") or article_link.get_text(strip=True) or "").strip()
+        link = article_link.get("href") or ""
+    if not title or title.lower() == "nd+":
+        title_el = article.find("div", class_="title-text")
+        title = (title_el.get_text(strip=True) if title_el else "") or title
+    time_el = article.find("time")
+    data = (time_el.get("title") or "").strip() if time_el else ""
     return {
-        "title": article.find("a").get_attribute_list("title")[0].strip(),
-        "link": article.find("a").get_attribute_list("href")[0],
-        "data": article.find("time").get_attribute_list("title")[0].strip(),
+        "title": title,
+        "link": link,
+        "data": data,
         "tag": tag
     }
 
@@ -85,11 +105,12 @@ def getNewsByTags(tags):
             new_articles = []
             for article in news:
                 try:
-                    link = article.find("a").get_attribute_list("href")[0]
-                    if link not in seen_links:
+                    a = article.find("a", href=True)
+                    link = a.get("href") if a else None
+                    if link and link not in seen_links:
                         seen_links.add(link)
                         new_articles.append(article)
-                except:
+                except Exception:
                     continue
 
             parsedNews = [articleFormatter(article, tag) for article in new_articles]

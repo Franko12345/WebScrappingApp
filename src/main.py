@@ -79,6 +79,94 @@ def _get_config_path() -> Path:
     return config_dir / "config.json"
 
 
+def _get_result_dir() -> Path:
+    """Path to result directory (Yast/result)."""
+    if sys.platform == "win32":
+        base = Path(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")))
+    else:
+        base = Path(os.path.expanduser("~"))
+    return base / "Yast" / "result"
+
+
+# Standard sheet columns (same for all sources)
+SHEET_SITE = "Site de Notícias"
+SHEET_TITULO = "Título da Notícia"
+SHEET_LINK = "Link"
+SHEET_DATA = "Data"
+CLASSIFICACAO_COL = "Classificação"
+STANDARD_COLUMNS = [SHEET_SITE, SHEET_TITULO, SHEET_LINK, SHEET_DATA, CLASSIFICACAO_COL]
+LAST_SOURCE_FILENAME = "last_source.txt"
+
+
+def _save_last_source(fonte: str) -> None:
+    """Persist the news source used for the last search (for standard sheet)."""
+    result_dir = _get_result_dir()
+    result_dir.mkdir(parents=True, exist_ok=True)
+    path = result_dir / LAST_SOURCE_FILENAME
+    try:
+        path.write_text(fonte.strip(), encoding="utf-8")
+    except Exception:
+        pass
+
+
+def _read_last_source() -> str:
+    """Read the news source from the last search."""
+    path = _get_result_dir() / LAST_SOURCE_FILENAME
+    if not path.exists():
+        return ""
+    try:
+        return path.read_text(encoding="utf-8").strip()
+    except Exception:
+        return ""
+
+
+def _normalize_to_standard_sheet(df: pd.DataFrame, source_name: str) -> pd.DataFrame:
+    """Return a DataFrame with standard columns only: Site de Notícias, Título da Notícia, Link, Data, Classificação."""
+    n = len(df)
+    title_col = None
+    link_col = None
+    data_col = None
+    for c in df.columns:
+        c_lower = str(c).lower().strip()
+        # Exact match first
+        if c_lower in ("título", "titulo", "title"):
+            title_col = c
+        elif c_lower in ("link", "url"):
+            link_col = c
+        elif c_lower in ("data", "date"):
+            data_col = c
+    # If already standard columns (e.g. "Título da Notícia"), match by containing the keyword
+    if title_col is None:
+        for c in df.columns:
+            c_lower = str(c).lower()
+            if "titulo" in c_lower or "título" in c_lower or "title" in c_lower:
+                title_col = c
+                break
+    if link_col is None:
+        for c in df.columns:
+            if "link" in str(c).lower() or "url" in str(c).lower():
+                link_col = c
+                break
+    if data_col is None:
+        for c in df.columns:
+            if "data" in str(c).lower() or "date" in str(c).lower():
+                data_col = c
+                break
+    if title_col is None and len(df.columns):
+        title_col = df.columns[0]
+    if link_col is None and len(df.columns) > 1:
+        link_col = df.columns[1]
+    if data_col is None and len(df.columns) > 2:
+        data_col = df.columns[2]
+    out = pd.DataFrame()
+    out[SHEET_SITE] = [source_name] * n
+    out[SHEET_TITULO] = df[title_col].astype(str).tolist() if title_col is not None else [""] * n
+    out[SHEET_LINK] = df[link_col].astype(str).tolist() if link_col is not None else [""] * n
+    out[SHEET_DATA] = df[data_col].astype(str).tolist() if data_col is not None else [""] * n
+    out[CLASSIFICACAO_COL] = df[CLASSIFICACAO_COL].astype(str).tolist() if CLASSIFICACAO_COL in df.columns else [""] * n
+    return out
+
+
 @app.get("/api/config")
 def get_config():
     """Return persisted classifications and Gemini API key from disk."""
@@ -295,9 +383,9 @@ class ClassifyPayload(BaseModel):
 
 @app.post("/classify")
 def run_classification(payload: ClassifyPayload):
-    """Run Gemini classification on result.xlsx using the selected group. Adds column 'Classificação'."""
-    local_appdata = Path(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")))
-    result_path = local_appdata / "Yast" / "result" / "result.xlsx"
+    """Run Gemini classification on result.xlsx using the selected group. Adds column 'Classificação' and normalizes to standard sheet."""
+    result_dir = _get_result_dir()
+    result_path = result_dir / "result.xlsx"
     if not result_path.exists():
         return {"status": "error", "message": "Arquivo result.xlsx não encontrado."}
 
@@ -339,6 +427,8 @@ def run_classification(payload: ClassifyPayload):
     classifications = _classify_news_batch(api_key, items, categories)
 
     df[CLASSIFICACAO_COL] = classifications
+    source_name = _read_last_source()
+    df = _normalize_to_standard_sheet(df, source_name)
     try:
         df.to_excel(result_path, index=False, engine="openpyxl")
     except Exception as e:
@@ -350,8 +440,7 @@ Busy = False
 
 async def result_cleaner():
     await sleep(2)
-    local_appdata = Path(os.environ["LOCALAPPDATA"])
-    result_path = local_appdata / Path("Yast/result/result.xlsx")
+    result_path = _get_result_dir() / "result.xlsx"
     if result_path.exists():
         os.remove(str(result_path))
 
@@ -378,22 +467,19 @@ def read_root():
     html_path = BASE_DIR / "main.html"
     return FileResponse(str(html_path))
 
-CLASSIFICACAO_COL = "Classificação"
-
-
 @app.get("/file")
 async def get_result():
     global Busy
     print("Trying to get result")
     if get_state():
         Busy = False
-        local_appdata = Path(os.environ["LOCALAPPDATA"])
-        result_path = local_appdata / Path("Yast/result/result.xlsx")
+        result_dir = _get_result_dir()
+        result_path = result_dir / "result.xlsx"
         try:
             df = pd.read_excel(result_path, engine="openpyxl")
-            if CLASSIFICACAO_COL not in df.columns:
-                df[CLASSIFICACAO_COL] = ""
-                df.to_excel(result_path, index=False, engine="openpyxl")
+            source_name = _read_last_source()
+            df = _normalize_to_standard_sheet(df, source_name)
+            df.to_excel(result_path, index=False, engine="openpyxl")
         except Exception:
             pass
         response = FileResponse(str(result_path), filename="result.xlsx", media_type='application/octet-stream')
@@ -402,8 +488,7 @@ async def get_result():
     
 @app.get("/finished")
 def get_state():
-    local_appdata = Path(os.environ["LOCALAPPDATA"])
-    result_dir = local_appdata / Path("Yast/result/")
+    result_dir = _get_result_dir()
     if result_dir.exists():
         return "result.xlsx" in os.listdir(str(result_dir))
     return False
@@ -411,9 +496,7 @@ def get_state():
 @app.get("/busy")
 def get_busy():
     global Busy
-    
-    local_appdata = Path(os.environ["LOCALAPPDATA"])
-    result_dir = local_appdata / Path("Yast/result/")
+    result_dir = _get_result_dir()
     if result_dir.exists() and "result.xlsx" in os.listdir(str(result_dir)) and Busy:
         Busy = False
     
@@ -568,6 +651,9 @@ async def search_news(request: NewsRequest):
     else:
         args = ["0", str(int(request.max_news))] + keywords
     
+    # Persist source for standard sheet (Site de Notícias)
+    _save_last_source(request.fonte)
+
     # Build full command
     full_command = [str(buscadores_path)] + args
     print(f"Starting scraper: {full_command}")

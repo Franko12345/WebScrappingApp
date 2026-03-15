@@ -1,4 +1,5 @@
 import sys
+import re
 from bs4 import BeautifulSoup
 import pandas as pd
 
@@ -32,11 +33,42 @@ options.page_load_strategy = 'eager'
 
 driver = webdriver.Chrome(options=options)
 
+def _extract_date_from_snippet(snippet):
+    """Extract leading date part from Terra/Google snippet (e.g. 'há 2 dias ...' or '13/12/2025 ...')."""
+    if not snippet or not isinstance(snippet, str):
+        return "", snippet or ""
+    snippet = snippet.strip()
+    # Match "há N dias/horas/minutos" or "DD/MM/YYYY" or "DD/MM/YYYY ..."
+    m = re.match(r"(há\s+\d+\s+(?:dias?|horas?|minutos?)(?:\s+\.\.\.)?\s*)", snippet, re.I)
+    if m:
+        date_part = m.group(1).strip().rstrip("...").strip()
+        rest = snippet[len(m.group(0)):].strip()
+        return date_part, rest
+    m = re.match(r"(\d{1,2}/\d{1,2}/\d{4}(?:\s+\.\.\.)?\s*)", snippet)
+    if m:
+        date_part = m.group(1).strip().rstrip("...").strip()
+        rest = snippet[len(m.group(0)):].strip()
+        return date_part, rest
+    return "", snippet
+
+
 def articleFormatter(article, tag):
+    # Prefer the article link (href to terra content), not logo. Article is BeautifulSoup Tag.
+    link_el = article.find("a", class_="gs-title", recursive=True)
+    if not link_el:
+        link_el = article.find("a", href=re.compile(r"terra\.com\.br/"), recursive=True)
+    href = (link_el.get("href") or "").strip() if link_el else ""
+    title_text = (link_el.get_text(strip=True) if link_el else "") or ""
+    snippet_div = article.find("div", class_="gs-bidi-start-align gs-snippet", recursive=True)
+    description = (snippet_div.get_text(strip=True) if snippet_div else "") or ""
+    data_part, description_rest = _extract_date_from_snippet(description)
+    if not title_text or title_text.lower() == "terra" or len(title_text) < 3:
+        title_text = (description_rest[:200] + "..." if len(description_rest) > 200 else description_rest) or title_text
     return {
-        "title": article.find("a", class_="gs-title", recursive=True).text,
-        "link": article.find("a", class_="gs-title", recursive=True).get_attribute_list("href")[0],
-        "description": article.find("div", class_="gs-bidi-start-align gs-snippet", recursive=True).text,
+        "title": title_text,
+        "link": href,
+        "data": data_part,
+        "description": description_rest,
         "tag": tag
     }
 
@@ -111,7 +143,7 @@ def getNewsByTags(tags):
 
 def storeAsExcel(data, final=False):
     rows = list(map(lambda article: article.values(), data))
-    df = pd.DataFrame(rows, columns=["title", "link", "description", "tag"])
+    df = pd.DataFrame(rows, columns=["title", "link", "data", "description", "tag"])
 
     print(f"Número de noticias com duplicados: {len(df)}")
 
