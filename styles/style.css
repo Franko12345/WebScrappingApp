@@ -75,6 +75,42 @@
     color: red;
 }
 
+/* Modal X close button */
+dialog {
+    position: relative;
+}
+
+.modal-close {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    font-size: 28px;
+    line-height: 1;
+    color: #555;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.modal-close:hover {
+    color: #2E2E2E;
+    background-color: rgba(0, 0, 0, 0.06);
+}
+
+.modal-close:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
 /* Dots */
 .dots {
     text-align: center;
