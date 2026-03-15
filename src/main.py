@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 import subprocess
@@ -54,6 +55,62 @@ class NewsRequest(BaseModel):
     keyword: str
     fonte: str
     max_news: int
+
+
+def _get_config_path() -> Path:
+    """Path to persisted app config (classifications + API key). Survives app restart."""
+    if sys.platform == "win32":
+        base = Path(os.environ.get("LOCALAPPDATA", os.path.expanduser("~")))
+    else:
+        base = Path(os.path.expanduser("~"))
+    config_dir = base / "Yast"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    return config_dir / "config.json"
+
+
+@app.get("/api/config")
+def get_config():
+    """Return persisted classifications and Gemini API key from disk."""
+    path = _get_config_path()
+    if not path.exists():
+        return {"classes_groups": {}, "gemini_api_key": ""}
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return {
+            "classes_groups": data.get("classes_groups", {}),
+            "gemini_api_key": data.get("gemini_api_key", ""),
+        }
+    except Exception as e:
+        print(f"Error reading config: {e}")
+        return {"classes_groups": {}, "gemini_api_key": ""}
+
+
+class AppConfigPayload(BaseModel):
+    classes_groups: dict = {}
+    gemini_api_key: str = ""
+
+
+@app.post("/api/config")
+def save_config(payload: AppConfigPayload):
+    """Persist classifications and Gemini API key to disk."""
+    path = _get_config_path()
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(
+                {
+                    "classes_groups": payload.classes_groups,
+                    "gemini_api_key": payload.gemini_api_key or "",
+                },
+                f,
+                ensure_ascii=False,
+                indent=2,
+            )
+        return {"status": "ok"}
+    except Exception as e:
+        print(f"Error writing config: {e}")
+        return {"status": "error", "message": str(e)}
+
 
 Busy = False
 

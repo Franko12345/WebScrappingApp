@@ -1,9 +1,10 @@
 // Main application logic
+const API_BASE = 'http://127.0.0.1:5555'
 let menu_tab = 0
 let tags_list = []
 let classes_counter = 0
 
-// Gemini API key for news categorization (persisted in localStorage)
+// Gemini API key for news categorization (persisted on disk via backend + localStorage fallback)
 const GEMINI_API_KEY_STORAGE = 'webscrapping_gemini_api_key'
 let geminiApiKey = ''
 let editingClassGroupName = ""
@@ -334,6 +335,7 @@ function saveClassGroupEdit(){
     
     console.log(classes_groups)
     readClasses()
+    saveAppConfig()
     showNotification()
     
     // Scroll to top of classes section
@@ -672,6 +674,39 @@ function saveGeminiApiKey() {
     } catch (e) {
         console.warn('Could not save Gemini API key to storage', e)
     }
+}
+
+/** Load classifications and API key from disk (backend). Called on app startup. */
+function loadAppConfig() {
+    fetch(API_BASE + '/api/config')
+        .then((r) => r.json())
+        .then((data) => {
+            if (data.classes_groups && Object.keys(data.classes_groups).length > 0) {
+                classes_groups = data.classes_groups
+            }
+            if (data.gemini_api_key != null) {
+                geminiApiKey = data.gemini_api_key
+                const input = document.getElementById('gemini_api_key')
+                if (input) input.value = data.gemini_api_key
+            }
+            readClasses()
+        })
+        .catch(() => {
+            loadGeminiApiKey()
+            readClasses()
+        })
+}
+
+/** Persist classifications and API key to disk (backend). */
+function saveAppConfig() {
+    fetch(API_BASE + '/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            classes_groups: classes_groups,
+            gemini_api_key: geminiApiKey
+        })
+    }).then((r) => r.json()).catch(() => {})
 }
 
 function switchTabs(tab){
@@ -1072,7 +1107,7 @@ function cancelUpdate() {
 window.onload = function() {
     document.getElementById('downloadBtn').addEventListener('click', baixarArquivo);
     
-    loadGeminiApiKey();
+    loadAppConfig();
     
     // Settings: prevent form submit, save API key on button click
     const settingsForm = document.getElementById('settings_form');
@@ -1083,6 +1118,7 @@ window.onload = function() {
     if (settingsSaveBtn) {
         settingsSaveBtn.addEventListener('click', () => {
             saveGeminiApiKey();
+            saveAppConfig();
             const notif = document.getElementById('notification');
             if (notif && typeof showNotification === 'function') {
                 notif.textContent = 'Configurações salvas.';
