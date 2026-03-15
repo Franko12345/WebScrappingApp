@@ -338,7 +338,7 @@ def run_classification(payload: ClassifyPayload):
         items.append((title, content))
     classifications = _classify_news_batch(api_key, items, categories)
 
-    df["Classificação"] = classifications
+    df[CLASSIFICACAO_COL] = classifications
     try:
         df.to_excel(result_path, index=False, engine="openpyxl")
     except Exception as e:
@@ -378,6 +378,9 @@ def read_root():
     html_path = BASE_DIR / "main.html"
     return FileResponse(str(html_path))
 
+CLASSIFICACAO_COL = "Classificação"
+
+
 @app.get("/file")
 async def get_result():
     global Busy
@@ -386,6 +389,13 @@ async def get_result():
         Busy = False
         local_appdata = Path(os.environ["LOCALAPPDATA"])
         result_path = local_appdata / Path("Yast/result/result.xlsx")
+        try:
+            df = pd.read_excel(result_path, engine="openpyxl")
+            if CLASSIFICACAO_COL not in df.columns:
+                df[CLASSIFICACAO_COL] = ""
+                df.to_excel(result_path, index=False, engine="openpyxl")
+        except Exception:
+            pass
         response = FileResponse(str(result_path), filename="result.xlsx", media_type='application/octet-stream')
         create_task(result_cleaner())
         return response
