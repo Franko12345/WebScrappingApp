@@ -115,6 +115,13 @@
                 <span class="tab_title">Editar Classificações</span>
             </div>
 
+            <div id="settings_tab" class="icons_containers" onclick="switchTabs(2)">
+                <img class="icons" src="./assets/settings.svg" alt="Configurações">
+            </div>
+            <div id="settings_tab_text" class="tab_title_container">
+                <span class="tab_title">Configurações</span>
+            </div>
+
             <div id="info_tab" class="icons_containers" onclick="info.showModal(); showSlides(slideIndex)">
                 <!-- <img class="icons" src="./assets/info.svg" alt=""> -->
                 <svg class="icons" xmlns="http://www.w3.org/2000/svg" id="Outline" viewBox="0 0 24 24" width="512"><path d="M12,0A12,12,0,1,0,24,12,12.013,12.013,0,0,0,12,0Zm0,22A10,10,0,1,1,22,12,10.011,10.011,0,0,1,12,22Z"/><path d="M12,10H11a1,1,0,0,0,0,2h1v6a1,1,0,0,0,2,0V12A2,2,0,0,0,12,10Z"/><circle cx="12" cy="6.5" r="1.5"/></svg>
@@ -286,6 +293,20 @@
                     </button>
                 </div>
                 <div id="classes_error" class="field-error" style="display: none; margin-top: 8px;"></div>
+            </form>
+        </div>
+        <div id="settings_section" class="main-section" style="display: none;">
+            <form id="settings_form">
+                <div id="settings_content">
+                    <div class="input_group">
+                        <label for="gemini_api_key">Chave da API Gemini</label>
+                        <input type="password" id="gemini_api_key" name="gemini_api_key" placeholder="Cole sua chave da API Gemini (gratuita)" autocomplete="off">
+                        <span class="field-hint">Será usada para classificação de notícias com IA. A chave fica salva apenas neste dispositivo.</span>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center; margin-top: 16px;">
+                    <button type="button" id="settings_save" class="settings-save-btn">Salvar</button>
+                </div>
             </form>
         </div>
         <div id="info_section" style="display: none;">

@@ -2,6 +2,10 @@
 let menu_tab = 0
 let tags_list = []
 let classes_counter = 0
+
+// Gemini API key for news categorization (persisted in localStorage)
+const GEMINI_API_KEY_STORAGE = 'webscrapping_gemini_api_key'
+let geminiApiKey = ''
 let editingClassGroupName = ""
 let tempEditingGroup = null // Temporary structure for editing/creating
 let classes_groups = {
@@ -587,52 +591,87 @@ function cancelExitCategories() {
 function proceedWithTabSwitch(tab) {
     let home_tab = document.getElementById("home_tab")
     let classes_tab = document.getElementById("classes_tab")
+    let settings_tab = document.getElementById("settings_tab")
     let info_tab = document.getElementById("info_tab")
     let home_tab_text = document.getElementById("home_tab_text")
     let classes_tab_text = document.getElementById("classes_tab_text")
+    let settings_tab_text = document.getElementById("settings_tab_text")
     let info_tab_text = document.getElementById("info_tab_text")
 
     let home_section = document.getElementById("home_section")
     let classes_section = document.getElementById("classes_section")
+    let settings_section = document.getElementById("settings_section")
     let info_section = document.getElementById("info_section")
 
     if (tab == 0){
         home_tab.classList.add("selected")
         classes_tab.classList.remove("selected")
+        if (settings_tab) settings_tab.classList.remove("selected")
         info_tab.classList.remove("selected")
         home_section.style.display = "inline-block"
         classes_section.style.display = "none"
+        if (settings_section) settings_section.style.display = "none"
         info_section.style.display = "none"
-        
         home_tab_text.classList.add("show")
         classes_tab_text.classList.remove("show")
-        info_tab_text.classList.remove("show")
+        if (settings_tab_text) settings_tab_text.classList.remove("show")
+        if (info_tab_text) info_tab_text.classList.remove("show")
     } else if(tab == 1){
         home_tab.classList.remove("selected")
         classes_tab.classList.add("selected")
+        if (settings_tab) settings_tab.classList.remove("selected")
         info_tab.classList.remove("selected")
         home_section.style.display = "none"
         classes_section.style.display = "inline-block"
+        if (settings_section) settings_section.style.display = "none"
         info_section.style.display = "none"
-        
         home_tab_text.classList.remove("show")
         classes_tab_text.classList.add("show")
-        info_tab_text.classList.remove("show")
+        if (settings_tab_text) settings_tab_text.classList.remove("show")
+        if (info_tab_text) info_tab_text.classList.remove("show")
     } else if(tab == 2){
         home_tab.classList.remove("selected")
         classes_tab.classList.remove("selected")
-        info_tab.classList.add("selected")
+        if (settings_tab) settings_tab.classList.add("selected")
+        info_tab.classList.remove("selected")
         home_section.style.display = "none"
         classes_section.style.display = "none"
-        info_section.style.display = "inline-block"
-        
+        if (settings_section) settings_section.style.display = "inline-block"
+        info_section.style.display = "none"
         home_tab_text.classList.remove("show")
         classes_tab_text.classList.remove("show")
-        info_tab_text.classList.add("show")
+        if (settings_tab_text) settings_tab_text.classList.add("show")
+        if (info_tab_text) info_tab_text.classList.remove("show")
     }
     
     // Update menu_tab
     menu_tab = tab
+}
+
+function loadGeminiApiKey() {
+    try {
+        const stored = localStorage.getItem(GEMINI_API_KEY_STORAGE)
+        if (stored) {
+            geminiApiKey = stored
+            const input = document.getElementById('gemini_api_key')
+            if (input) input.value = stored
+        }
+    } catch (e) {
+        console.warn('Could not load Gemini API key from storage', e)
+    }
+}
+
+function saveGeminiApiKey() {
+    const input = document.getElementById('gemini_api_key')
+    if (!input) return
+    const value = (input.value || '').trim()
+    geminiApiKey = value
+    try {
+        if (value) localStorage.setItem(GEMINI_API_KEY_STORAGE, value)
+        else localStorage.removeItem(GEMINI_API_KEY_STORAGE)
+    } catch (e) {
+        console.warn('Could not save Gemini API key to storage', e)
+    }
 }
 
 function switchTabs(tab){
@@ -1032,6 +1071,27 @@ function cancelUpdate() {
 
 window.onload = function() {
     document.getElementById('downloadBtn').addEventListener('click', baixarArquivo);
+    
+    loadGeminiApiKey();
+    
+    // Settings: prevent form submit, save API key on button click
+    const settingsForm = document.getElementById('settings_form');
+    if (settingsForm) {
+        settingsForm.addEventListener('submit', (e) => e.preventDefault());
+    }
+    const settingsSaveBtn = document.getElementById('settings_save');
+    if (settingsSaveBtn) {
+        settingsSaveBtn.addEventListener('click', () => {
+            saveGeminiApiKey();
+            const notif = document.getElementById('notification');
+            if (notif && typeof showNotification === 'function') {
+                notif.textContent = 'Configurações salvas.';
+                showNotification();
+            } else {
+                alert('Configurações salvas.');
+            }
+        });
+    }
     
     // Check for updates on first boot (with small delay to ensure DOM is ready)
     setTimeout(() => {

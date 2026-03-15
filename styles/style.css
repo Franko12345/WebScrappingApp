@@ -924,3 +924,36 @@ main{
     width: 20px;
     height: 20px;
 }
+
+/* Settings */
+#settings_section form {
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.field-hint {
+    font-size: 0.8rem;
+    color: #6c757d;
+    margin-top: 4px;
+    display: block;
+}
+
+.settings-save-btn {
+    padding: 12px 24px;
+    border-radius: 8px;
+    border: none;
+    background-color: var(--primary-color);
+    color: #2E2E2E;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 16px;
+    transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.settings-save-btn:hover {
+    background-color: #9FE8B3;
+    box-shadow: inset 0px 0px 5px 0px rgba(0,0,0,0.1);
+}
