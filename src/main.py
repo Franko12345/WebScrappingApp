@@ -212,12 +212,18 @@ def save_config(payload: AppConfigPayload):
 
 
 # --- News classification with Gemini ---
-# Gemini 2.5 Flash: best price-performance for high-volume tasks (gemini_models.md)
-GEMINI_MODEL = "gemini-2.5-flash"
-GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
+# Try models in order; if one returns 429 (rate limit), use the next
+GEMINI_MODELS = [
+    "gemini-2.5-flash",       # best price-performance, high-volume
+    "gemini-2.5-flash-lite",  # faster, budget-friendly
+    "gemini-2.0-flash",       # fallback (separate quota)
+]
 NAO_SE_ENCAIXA = "Não se encaixa em nenhuma classificação"
-# Max items per batch to stay within context and output token limits
 CLASSIFY_BATCH_SIZE = 80
+
+
+def _gemini_url(model: str) -> str:
+    return f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
 
 def _get_categories_for_group(classes_groups: dict, group_key: str):
@@ -309,7 +315,7 @@ IMPORTANTE: Responda com UMA LINHA por notícia, na mesma ordem (notícia 1 = li
         max_tokens = min(8192, 64 + len(batch) * 32)
         text = ""
         last_error = None
-        for attempt in range(3):
+        for model in GEMINI_MODELS:
             try:
                 if HAS_GENAI:
                     client = genai.Client(api_key=api_key)
@@ -318,16 +324,16 @@ IMPORTANTE: Responda com UMA LINHA por notícia, na mesma ordem (notícia 1 = li
                         "temperature": 0.1,
                         "max_output_tokens": max_tokens,
                     }
-                    # Gemini 2.5 Flash does not support thinking_config; only 3.x models do
                     response = client.models.generate_content(
-                        model=GEMINI_MODEL,
+                        model=model,
                         contents=user_content,
                         config=genai_types.GenerateContentConfig(**config_kw),
                     )
                     text = (response.text or "").strip()
                 else:
+                    url = _gemini_url(model)
                     resp = requests.post(
-                        GEMINI_URL,
+                        url,
                         headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
                         json={
                             "system_instruction": {"parts": [{"text": system_instruction}]},
@@ -348,19 +354,16 @@ IMPORTANTE: Responda com UMA LINHA por notícia, na mesma ordem (notícia 1 = li
                         .get("text", "")
                     )
                     text = (text or "").strip()
-                break
+                if text:
+                    break
             except Exception as e:
                 last_error = e
                 err_str = str(e).upper()
                 status = getattr(getattr(e, "response", None), "status_code", None) or getattr(e, "status_code", None)
                 if status == 429 or "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
-                    wait = 50 if attempt < 2 else 0
-                    if wait:
-                        print(f"Gemini rate limit (429), retrying in {wait}s...")
-                        time.sleep(wait)
+                    print(f"Gemini rate limit (429) com {model}, tentando próximo modelo...")
                 else:
-                    print(f"Gemini classification error: {e}")
-                    text = ""
+                    print(f"Gemini classification error ({model}): {e}")
                     break
         if not text:
             if last_error:
@@ -653,6 +656,14 @@ async def search_news(request: NewsRequest):
     
     # Persist source for standard sheet (Site de Notícias)
     _save_last_source(request.fonte)
+
+    # Remove previous result so /finished stays false until the current scraper writes the file
+    result_path = _get_result_dir() / "result.xlsx"
+    if result_path.exists():
+        try:
+            result_path.unlink(missing_ok=True)
+        except Exception:
+            pass
 
     # Build full command
     full_command = [str(buscadores_path)] + args
