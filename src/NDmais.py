@@ -114,55 +114,42 @@ def getNewsByTags(tags):
             if resetCounter == 5 or page == max_page:
                 return allNews
 
-            # Try to load more content for next iteration
+            # Try to load more content: scroll and look for "Veja mais" button
+            import time
+            driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            time.sleep(1)
+
+            # Check if "Veja mais" button exists (no more results = button is gone)
             try:
-                import time
-                
-                # Scroll to bottom to ensure button is visible
-                driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                time.sleep(1)
-                
-                # Wait for the button to be present
-                button = WebDriverWait(driver, 10).until(
+                button = WebDriverWait(driver, 5).until(
                     EC.presence_of_element_located((By.CSS_SELECTOR, "button.ajax-pagination-button, button[title='Veja mais']"))
                 )
-                
-                # Scroll the button into view using JavaScript
+            except Exception:
+                # Button not found = no more news, finish cleanly
+                print(f"\nFim dos resultados (botão Veja mais não encontrado). Total: {len(allNews)}\n")
+                return allNews
+
+            try:
                 driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", button)
                 time.sleep(1)
-                
-                # Wait a bit more for any overlays to disappear
                 time.sleep(0.5)
-                
-                # Get current number of articles before clicking
                 current_article_count = len(driver.find_elements(By.CSS_SELECTOR, "div.site-card-content"))
-                
-                # Use JavaScript click to avoid interception issues
                 driver.execute_script("arguments[0].click();", button)
-                
-                # Wait for new articles to be loaded (AJAX call completes)
-                # Wait until the number of articles increases or a timeout occurs
                 try:
                     WebDriverWait(driver, 15).until(
                         lambda d: len(d.find_elements(By.CSS_SELECTOR, "div.site-card-content")) > current_article_count
                     )
-                except:
-                    # If no new articles appear, the page might be fully loaded
-                    # Check if button still exists (if not, we've reached the end)
+                except Exception:
                     try:
                         driver.find_element(By.CSS_SELECTOR, "button.ajax-pagination-button")
-                        # Button still exists but no new content - might be loading or error
                         time.sleep(2)
-                    except:
-                        # Button doesn't exist anymore - page fully loaded
+                    except Exception:
                         pass
-                
-                # Additional small wait to ensure all content is rendered
                 time.sleep(1)
-                
-            except Exception as e:
-                print(f"Page {tag} carregada completamente ou erro ao carregar mais: {str(e)}")
-                break
+            except Exception:
+                # Click or load failed; we already have current results, finish cleanly
+                print(f"\nFim da busca para tag '{tag}'. Total: {len(allNews)}\n")
+                return allNews
 
     return allNews
 
@@ -191,8 +178,9 @@ def storeAsExcel(data, final=False):
 
 searchReference = sys.argv[3:]
 max_news = int(sys.argv[2])
-
-searchReference = {x:int(round((max_news/10)+0.5)) for x in list(map(lambda x: x.replace(" ", "+"), searchReference))}
+# -1 = unlimited: use a large page limit so we keep fetching until no more results
+effective_max = 10000 if max_news == -1 else max_news
+searchReference = {x: int(round((effective_max / 10) + 0.5)) for x in list(map(lambda x: x.replace(" ", "+"), searchReference))}
 
 data = getNewsByTags(searchReference)
 

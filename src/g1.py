@@ -63,8 +63,10 @@ def scrape_infinite_scroll(url, num_items):
 if __name__ == '__main__':
     searchReference = sys.argv[3:]
     print(searchReference)
-    max_news =  int(sys.argv[2])
-    Verbose =  int(sys.argv[1])
+    max_news = int(sys.argv[2])
+    # -1 = unlimited: scrape until a high cap so we get as many as available
+    num_items = 100000 if max_news == -1 else max_news
+    Verbose = int(sys.argv[1])
 
     options = webdriver.ChromeOptions()
 
@@ -106,7 +108,7 @@ if __name__ == '__main__':
         # url = f"https://g1.globo.com/busca/?q={chave}&order=recent&from={2020}-01-01T00%3A00%3A00-0200&to={2020}-12-30T23%3A59%3A59-0200"
         url = f"https://g1.globo.com/busca/?q={chave}&order=recent"
         print(f"\nBuscando {chave}")
-        scraped_data = scrape_infinite_scroll(url, max_news)
+        scraped_data = scrape_infinite_scroll(url, num_items)
 
         dfTemp = pd.DataFrame(list(map(lambda x: x.values(), scraped_data)) ,columns=scraped_data[0].keys())
         df = pd.concat([df, dfTemp])

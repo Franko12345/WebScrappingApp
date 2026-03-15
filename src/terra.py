@@ -134,8 +134,9 @@ def storeAsExcel(data, final=False):
 
 searchReference = sys.argv[3:]
 max_news = int(sys.argv[2])
-
-searchReference = {x:int(round((max_news/10)+0.5)) for x in list(map(lambda x: x.replace(" ", "+"), searchReference))}
+# -1 = unlimited: use a large page limit so we keep fetching until no more results
+effective_max = 10000 if max_news == -1 else max_news
+searchReference = {x: int(round((effective_max / 10) + 0.5)) for x in list(map(lambda x: x.replace(" ", "+"), searchReference))}
 
 data = getNewsByTags(searchReference)
 

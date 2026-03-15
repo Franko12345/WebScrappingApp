@@ -34,6 +34,8 @@ options.add_argument('--disable-notifications')
 options.page_load_strategy = 'eager'
 
 driver = webdriver.Chrome(options=options)
+# Timeout so we don't hang forever on a page that never loads (e.g. past last page)
+driver.set_page_load_timeout(25)
 
 def articleFormatter(article, tag):
     return {
@@ -69,22 +71,35 @@ def getNewsByTags(tags):
                 try:
                     driver.get(f"https://www.nsctotal.com.br/tag/{tag}?page={page}")
                     acessed = True
-                except:
-                    print("Erro ao acessar a página, reiniciando navegador...")
-                    driver.quit()
-                    driver = webdriver.Chrome(service=driverpath, options=options)
+                except Exception as e:
+                    print(f"Erro ao acessar a página {page} ({e}), assumindo fim dos resultados.")
+                    return allNews
 
             try:
-                WebDriverWait(driver, 10).until( EC.presence_of_element_located( (By.CLASS_NAME, "date") ) )
+                WebDriverWait(driver, 15).until(EC.presence_of_element_located((By.CLASS_NAME, "date")))
                 driver.implicitly_wait(5)
-            except:
-                continue
+            except Exception:
+                # Page loaded but no content or took too long; treat as end of results
+                print(f"\nPágina {page} sem conteúdo ou timeout. Total: {len(allNews)}\n")
+                return allNews
 
             soup = BeautifulSoup(driver.page_source, 'html.parser')
 
             news = soup.find_all('div', class_='featured-news-thumb')
 
             parsedNews = [articleFormatter(article, tag) for article in news]
+
+            # No articles on this page = end of results, stop immediately
+            if len(parsedNews) == 0:
+                print(f"\nFim dos resultados (página {page} vazia). Total: {len(allNews)}\n")
+                return allNews
+
+            # Partial page (e.g. 7 instead of 10) = last page; stop so we never request the next page (which can hang)
+            if len(parsedNews) < 10:
+                allNews += parsedNews
+                print(f"\nNoticias coletadas: {len(parsedNews)}\nTag: {tag}\nPágina:{page}\nTotal: {len(allNews)}\n")
+                print(f"\nÚltima página parcial ({len(parsedNews)} itens), encerrando. Total: {len(allNews)}\n")
+                return allNews
 
             allNews += parsedNews
 
@@ -97,13 +112,15 @@ def getNewsByTags(tags):
                     allNews = allNews[:currentNewsNum+max_news]
                     break
             
-            if(lastNewsNumber != len(allNews)):
+            if lastNewsNumber != len(allNews):
                 lastNewsNumber = len(allNews)
                 resetCounter = 0
             else:
                 resetCounter += 1
             
-            if resetCounter == 5 or page == max_page:
+            # Stop when no new items for 3 pages in a row or reached max_page
+            if resetCounter >= 3 or page == max_page:
+                print(f"\nParando (sem novos resultados ou limite de páginas). Total: {len(allNews)}\n")
                 return allNews   
 
     return allNews
@@ -133,8 +150,9 @@ def storeAsExcel(data, final=False):
 
 searchReference = sys.argv[3:]
 max_news = int(sys.argv[2])
-
-searchReference = {x:int(round((max_news/10)+0.5)) for x in list(map(lambda x: x.replace(" ", "+"), searchReference))}
+# -1 = unlimited: use a large page limit so we keep fetching until no more results
+effective_max = 10000 if max_news == -1 else max_news
+searchReference = {x: int(round((effective_max / 10) + 0.5)) for x in list(map(lambda x: x.replace(" ", "+"), searchReference))}
 
 data = getNewsByTags(searchReference)
 

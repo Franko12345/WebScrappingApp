@@ -924,16 +924,19 @@ function mostrarDownload(event) {
 
     const palavra = tags_list.join(" ");
     const media_outlet = document.getElementById('media_outlet').value;
-    const max_news = document.getElementById('max_news').value == "" ? 50 : document.getElementById('max_news').value;
+    const max_news_switch = document.getElementById('max_news_switch');
+    const max_news_input = document.getElementById('max_news').value.trim();
+    // When switch is unchecked = unlimited search (-1). When checked = use the number they entered.
+    const max_news = (max_news_switch && max_news_switch.checked) ? parseInt(max_news_input, 10) : -1;
     
     console.log("Palavra-chave:", palavra);
     console.log("Fonte:", media_outlet);
-    console.log("Número máximo de notícias:", max_news);
+    console.log("Número máximo de notícias:", max_news === -1 ? "ilimitado" : max_news);
 
     const requestData = {
         keyword: palavra,
         fonte: media_outlet,
-        max_news: parseInt(max_news)
+        max_news: max_news
     };
 
     fetch_news("", "POST", requestData).then((r) => {
