@@ -110,9 +110,9 @@ function handleClassSelect(){
             const categoryData = tempEditingGroup[parameter]
             content.insertAdjacentHTML("beforeend", `
                 <div class="input_group" style="margin-top: 15px">
-                    <label for="class_category_${classes_counter}">Categoria ${classes_counter}</label>
-                    <input id="category_${classes_counter}" name="class_category_${classes_counter}" type="text" placeholder="Nome da categoria" value="${categoryData?.name || ''}">
-                    <textarea name="" id="description_${classes_counter}" placeholder="Informe a descrição da categoria">${categoryData?.description || ''}</textarea>
+                    <label for="class_category_${classes_counter}">Classificação ${classes_counter}</label>
+                    <input id="category_${classes_counter}" name="class_category_${classes_counter}" type="text" placeholder="Nome da classificação" value="${categoryData?.name || ''}">
+                    <textarea name="" id="description_${classes_counter}" placeholder="Informe a descrição da classificação">${categoryData?.description || ''}</textarea>
                 </div>
             `)
         }
@@ -151,9 +151,9 @@ function handleNewClassGroup(){
     `)
     content.insertAdjacentHTML("beforeend", `
         <div class="input_group" style="margin-top: 15px">
-            <label for="class_category_1">Categoria 1</label>
-            <input id="category_1" name="class_category_1" type="text" placeholder="Nome da categoria" value="">
-            <textarea name="" id="description_1" placeholder="Informe a descrição da categoria"></textarea>
+            <label for="class_category_1">Classificação 1</label>
+            <input id="category_1" name="class_category_1" type="text" placeholder="Nome da classificação" value="">
+            <textarea name="" id="description_1" placeholder="Informe a descrição da classificação"></textarea>
         </div>
     `)
 }
@@ -236,9 +236,9 @@ function addClass(){
     
     content.insertAdjacentHTML("beforeend", `
         <div class="input_group" style="margin-top: 15px">
-            <label for="category_name">Categoria ${classes_counter}</label>
-            <input id="category_${classes_counter}" name="class_category_${classes_counter}" type="text" placeholder="Nome da categoria" value="">
-            <textarea name="" id="description_${classes_counter}" placeholder="Informe a descrição da categoria"></textarea>
+            <label for="category_name">Classificação ${classes_counter}</label>
+            <input id="category_${classes_counter}" name="class_category_${classes_counter}" type="text" placeholder="Nome da classificação" value="">
+            <textarea name="" id="description_${classes_counter}" placeholder="Informe a descrição da classificação"></textarea>
         </div>
     `)
 }
@@ -284,7 +284,7 @@ function saveClassGroupEdit(){
     }
     
     if (!hasValidCategory) {
-        showClassesError("Por favor, adicione pelo menos uma categoria com nome")
+        showClassesError("Por favor, adicione pelo menos uma classificação com nome")
         return
     }
     
@@ -769,7 +769,7 @@ function validateForm() {
     // Validate class group
     const class_group = document.getElementById('class_group').value;
     if (!class_group || class_group === '_') {
-        showFieldError('class_group', 'Por favor, selecione um grupo de categorias');
+        showFieldError('class_group', 'Por favor, selecione um grupo de classificações');
         isValid = false;
     }
     
