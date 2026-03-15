@@ -16,5 +16,8 @@ pywin32
 certifi
 requests>=2.31.0
 
+# Gemini API (official SDK)
+google-genai>=1.0.0
+
 # Built-in modules (no installation needed):
 # sys, os, subprocess, time, zipfile

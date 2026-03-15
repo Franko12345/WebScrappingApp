@@ -267,6 +267,11 @@ input, select, textarea{
     resize: none;
 }
 
+#class_content textarea {
+    min-height: 100px;
+    resize: vertical;
+}
+
 select{
     display: flex;
     align-items: center;
@@ -956,4 +961,19 @@ main{
 .settings-save-btn:hover {
     background-color: #9FE8B3;
     box-shadow: inset 0px 0px 5px 0px rgba(0,0,0,0.1);
+}
+
+/* Read-only default classification group */
+.group-readonly-msg {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.group-description-readonly {
+    font-size: 0.85rem;
+    color: #495057;
+    margin-bottom: 12px;
+    line-height: 1.4;
 }

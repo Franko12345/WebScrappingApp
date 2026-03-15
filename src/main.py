@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import subprocess
+import time
 from pathlib import Path
 from signal import SIGTERM
 from threading import Thread
@@ -9,6 +10,13 @@ from threading import Thread
 import pandas as pd
 import requests
 from fastapi import FastAPI
+
+try:
+    from google import genai
+    from google.genai import types as genai_types
+    HAS_GENAI = True
+except ImportError:
+    HAS_GENAI = False
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
@@ -115,9 +123,12 @@ def save_config(payload: AppConfigPayload):
 
 
 # --- News classification with Gemini ---
-GEMINI_MODEL = "gemini-1.5-flash"
+# Gemini 2.5 Flash: best price-performance for high-volume tasks (gemini_models.md)
+GEMINI_MODEL = "gemini-2.5-flash"
 GEMINI_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
 NAO_SE_ENCAIXA = "Não se encaixa em nenhuma classificação"
+# Max items per batch to stay within context and output token limits
+CLASSIFY_BATCH_SIZE = 80
 
 
 def _get_categories_for_group(classes_groups: dict, group_key: str):
@@ -135,69 +146,124 @@ def _get_categories_for_group(classes_groups: dict, group_key: str):
     return categories
 
 
-def _classify_news_with_gemini(
-    api_key: str,
-    title: str,
-    content: str,
-    categories: list[tuple[str, str]],
-) -> str:
-    """Call Gemini API to classify one news item. Returns category name or NAO_SE_ENCAIXA."""
-    if not api_key or not categories:
+def _normalize_label(text: str, valid_names: set) -> str:
+    """Map model output to a valid category name or NAO_SE_ENCAIXA."""
+    text = (text or "").strip()
+    if text in valid_names:
+        return text
+    if NAO_SE_ENCAIXA in text or not text:
         return NAO_SE_ENCAIXA
+    for name in valid_names:
+        if name in text:
+            return name
+    return NAO_SE_ENCAIXA
 
+
+def _classify_news_batch(
+    api_key: str,
+    items: list[tuple[str, str]],
+    categories: list[tuple[str, str]],
+) -> list[str]:
+    """
+    Classify multiple news items in one (or few) API calls.
+    Returns one category name (or NAO_SE_ENCAIXA) per item, in order.
+    """
+    if not api_key or not categories or not items:
+        return [NAO_SE_ENCAIXA] * len(items) if items else []
+
+    valid_names = {name for name, _ in categories}
     categories_text = "\n".join(
         f"- **{name}**: {desc}" if desc else f"- **{name}**"
         for name, desc in categories
     )
-    prompt = f"""Classifique a seguinte notícia em exatamente UMA das categorias abaixo.
-Responda APENAS com o nome exato da categoria (como está na lista). Não inclua ponto final nem texto extra.
-Se a notícia não se encaixar em nenhuma categoria, responda exatamente: {NAO_SE_ENCAIXA}
+    system_instruction = f"""Você é um classificador de notícias. Para cada notícia listada, escolha exatamente UMA categoria.
 
-Categorias disponíveis:
+Categorias disponíveis (use apenas o nome exato):
 {categories_text}
 
-Notícia:
-Título: {title}
-Conteúdo: {content[:1500] if content else '(sem conteúdo)'}
+Se uma notícia não se encaixar em nenhuma categoria, use exatamente: {NAO_SE_ENCAIXA}
 
-Sua resposta (apenas o nome da categoria ou "{NAO_SE_ENCAIXA}"):"""
+IMPORTANTE: Responda com UMA LINHA por notícia, na mesma ordem (notícia 1 = linha 1, notícia 2 = linha 2, etc). Em cada linha escreva APENAS o nome da categoria ou "{NAO_SE_ENCAIXA}". Nada mais."""
 
-    try:
-        resp = requests.post(
-            GEMINI_URL,
-            headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
-            json={
-                "contents": [{"parts": [{"text": prompt}]}],
-                "generationConfig": {
-                    "temperature": 0.1,
-                    "maxOutputTokens": 64,
-                },
-            },
-            timeout=30,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        text = (
-            (data.get("candidates") or [{}])[0]
-            .get("content", {})
-            .get("parts", [{}])[0]
-            .get("text", "")
-        )
-        text = (text or "").strip()
-        # Normalize: only the category name or the exact fallback
-        valid_names = {name for name, _ in categories}
-        if text in valid_names:
-            return text
-        if NAO_SE_ENCAIXA in text or not text:
-            return NAO_SE_ENCAIXA
-        # Try to match one of the category names in the response
-        for name in valid_names:
-            if name in text:
-                return name
-        return NAO_SE_ENCAIXA
-    except Exception as e:
-        print(f"Gemini classification error: {e}")
-        return NAO_SE_ENCAIXA
+    result_labels: list[str] = []
+    for start in range(0, len(items), CLASSIFY_BATCH_SIZE):
+        batch = items[start : start + CLASSIFY_BATCH_SIZE]
+        batch_content_parts = []
+        for i, (title, content) in enumerate(batch, start=1):
+            snippet = (content[:800] if content else "(sem conteúdo)")
+            batch_content_parts.append(f"NOTÍCIA {i}:\nTítulo: {title}\nConteúdo: {snippet}\n")
+        user_content = "\n---\n".join(batch_content_parts)
+        user_content += f"\n\nResponda com {len(batch)} linhas (uma categoria por linha, na ordem 1 a {len(batch)}):"
+
+        max_tokens = min(8192, 64 + len(batch) * 32)
+        text = ""
+        last_error = None
+        for attempt in range(3):
+            try:
+                if HAS_GENAI:
+                    client = genai.Client(api_key=api_key)
+                    config_kw = {
+                        "system_instruction": system_instruction,
+                        "temperature": 0.1,
+                        "max_output_tokens": max_tokens,
+                    }
+                    # Gemini 2.5 Flash does not support thinking_config; only 3.x models do
+                    response = client.models.generate_content(
+                        model=GEMINI_MODEL,
+                        contents=user_content,
+                        config=genai_types.GenerateContentConfig(**config_kw),
+                    )
+                    text = (response.text or "").strip()
+                else:
+                    resp = requests.post(
+                        GEMINI_URL,
+                        headers={"x-goog-api-key": api_key, "Content-Type": "application/json"},
+                        json={
+                            "system_instruction": {"parts": [{"text": system_instruction}]},
+                            "contents": [{"parts": [{"text": user_content}]}],
+                            "generationConfig": {
+                                "temperature": 0.1,
+                                "maxOutputTokens": max_tokens,
+                            },
+                        },
+                        timeout=120,
+                    )
+                    resp.raise_for_status()
+                    data = resp.json()
+                    text = (
+                        (data.get("candidates") or [{}])[0]
+                        .get("content", {})
+                        .get("parts", [{}])[0]
+                        .get("text", "")
+                    )
+                    text = (text or "").strip()
+                break
+            except Exception as e:
+                last_error = e
+                err_str = str(e).upper()
+                status = getattr(getattr(e, "response", None), "status_code", None) or getattr(e, "status_code", None)
+                if status == 429 or "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
+                    wait = 50 if attempt < 2 else 0
+                    if wait:
+                        print(f"Gemini rate limit (429), retrying in {wait}s...")
+                        time.sleep(wait)
+                else:
+                    print(f"Gemini classification error: {e}")
+                    text = ""
+                    break
+        if not text:
+            if last_error:
+                print(f"Gemini classification error: {last_error}")
+            result_labels.extend([NAO_SE_ENCAIXA] * len(batch))
+            continue
+
+        # Parse one label per line; normalize and pad if we get fewer lines than items
+        lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+        for i in range(len(batch)):
+            label = _normalize_label(lines[i], valid_names) if i < len(lines) else NAO_SE_ENCAIXA
+            result_labels.append(label)
+
+    return result_labels
 
 
 class ClassifyPayload(BaseModel):
@@ -242,12 +308,12 @@ def run_classification(payload: ClassifyPayload):
     if content_col is None:
         content_col = ""
 
-    classifications = []
+    items = []
     for idx, row in df.iterrows():
         title = str(row.get(title_col, "") or "")
         content = str(row.get(content_col, "") or "") if content_col else ""
-        label = _classify_news_with_gemini(api_key, title, content, categories)
-        classifications.append(label)
+        items.append((title, content))
+    classifications = _classify_news_batch(api_key, items, categories)
 
     df["Classificação"] = classifications
     try:

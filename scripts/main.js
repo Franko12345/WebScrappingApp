@@ -9,22 +9,29 @@ const GEMINI_API_KEY_STORAGE = 'webscrapping_gemini_api_key'
 let geminiApiKey = ''
 let editingClassGroupName = ""
 let tempEditingGroup = null // Temporary structure for editing/creating
-let classes_groups = {
-    default: {
-        name:  "Padrão",
-        class_1: {
-            name: "Passado",
-            description: ""
-        },
-        class_2: {
-            name: "Histórico",
-            description: ""
-        },
-        class_3: {
-            name: "Previsão",
-            description: ""
-        },
+
+// Fixed default classification group (not editable by the user)
+const DEFAULT_CLASS_GROUP = {
+    name: "Padrão",
+    description: "Classificação para notícias sobre chuvas fortes e eventos extremos meteorológicos. Use em estudos sobre desastres e eventos extremos.",
+    class_1: {
+        name: "Passado",
+        description: "Notícias sobre eventos já ocorridos: relatos de chuvas, enchentes ou desastres que já aconteceram; cobertura pós-evento."
+    },
+    class_2: {
+        name: "Histórico",
+        description: "Notícias com contexto histórico: dados de anos anteriores, comparações temporais, séries históricas de chuva ou desastres."
+    },
+    class_3: {
+        name: "Previsão",
+        description: "Alertas e previsão do tempo: avisos meteorológicos, orientações para os próximos dias, previsão de chuvas fortes."
     }
+}
+
+const DEFAULT_GROUP_KEY = "default"
+
+let classes_groups = {
+    [DEFAULT_GROUP_KEY]: JSON.parse(JSON.stringify(DEFAULT_CLASS_GROUP))
 }
 
 var form = document.getElementById("ClassesForm");
@@ -71,71 +78,83 @@ function handleClassSelect(){
     let content = document.getElementById("class_content")
     let classes_editor = document.getElementById("classes_editor")
     let add_class = document.getElementById("add_class")
-    
+    const cancelBtn = document.getElementById("classes_cancel")
+    const saveBtn = document.getElementById("classes_save")
+
     if (!classes_editor.value || classes_editor.value === "_") {
         resetCategoriesTab()
         return
     }
-    
-    add_class.style.display = "flex"
+
+    const isDefaultGroup = classes_editor.value === DEFAULT_GROUP_KEY
     editingClassGroupName = classes_editor.value
-    
-    // Show cancel button
-    const cancelBtn = document.getElementById("classes_cancel")
-    if (cancelBtn) {
-        cancelBtn.style.display = "flex"
+
+    if (isDefaultGroup) {
+        add_class.style.display = "none"
+        if (cancelBtn) cancelBtn.style.display = "none"
+        if (saveBtn) saveBtn.style.display = "none"
+    } else {
+        add_class.style.display = "flex"
+        if (cancelBtn) cancelBtn.style.display = "flex"
+        if (saveBtn) saveBtn.style.display = "block"
     }
-    
-    // Create a deep copy of the group for temporary editing
+
     const originalData = classes_groups[classes_editor.value]
     if (!originalData) {
         resetCategoriesTab()
         return
     }
-    
-    // Deep clone the data structure
-    tempEditingGroup = JSON.parse(JSON.stringify(originalData))
 
+    tempEditingGroup = JSON.parse(JSON.stringify(originalData))
     content.innerHTML = ""
-    
-    // Add the name field first
+
+    const groupDesc = tempEditingGroup.description || ""
+    const readOnlyAttr = isDefaultGroup ? " readonly" : ""
+    const disabledAttr = isDefaultGroup ? " disabled" : ""
+
+    if (isDefaultGroup) {
+        content.insertAdjacentHTML("beforeend", `
+            <p class="group-readonly-msg">Este grupo é fixo e não pode ser editado.</p>
+            ${groupDesc ? `<p class="group-description-readonly">${groupDesc}</p>` : ""}
+        `)
+    }
+
     content.insertAdjacentHTML("beforeend", `
         <div class="input_group">
             <label for="class_name">Nome</label>
-            <input id="class_name" name="class_name" type="text" placeholder="Nome do grupo de classificações" value="${tempEditingGroup.name || ''}">
+            <input id="class_name" name="class_name" type="text" placeholder="Nome do grupo de classificações" value="${(tempEditingGroup.name || '').replace(/"/g, '&quot;')}"${readOnlyAttr}${disabledAttr}>
         </div>
         <hr style="color:#646464; background:#646464;border:#646464">
     `)
-    
-    // Count only class_* properties, not "name"
+
     classes_counter = 0
-    for(const parameter in tempEditingGroup){
-        if (parameter.startsWith('class_')) {
+    for (const parameter in tempEditingGroup) {
+        if (parameter.startsWith("class_")) {
             classes_counter++
             const categoryData = tempEditingGroup[parameter]
+            const catName = (categoryData?.name || "").replace(/"/g, "&quot;")
+            const catDesc = (categoryData?.description || "").replace(/</g, "&lt;").replace(/>/g, "&gt;")
             content.insertAdjacentHTML("beforeend", `
                 <div class="input_group" style="margin-top: 15px">
                     <label for="class_category_${classes_counter}">Classificação ${classes_counter}</label>
-                    <input id="category_${classes_counter}" name="class_category_${classes_counter}" type="text" placeholder="Nome da classificação" value="${categoryData?.name || ''}">
-                    <textarea name="" id="description_${classes_counter}" placeholder="Informe a descrição da classificação">${categoryData?.description || ''}</textarea>
+                    <input id="category_${classes_counter}" name="class_category_${classes_counter}" type="text" placeholder="Nome da classificação" value="${catName}"${readOnlyAttr}${disabledAttr}>
+                    <textarea name="" id="description_${classes_counter}" placeholder="Informe a descrição da classificação"${disabledAttr}>${catDesc}</textarea>
                 </div>
             `)
         }
     }
-    
 }
 
 function handleNewClassGroup(){
     let content = document.getElementById("class_content")
     let add_class = document.getElementById("add_class")
     add_class.style.display = "flex"
-    
-    // Show cancel button
+
     const cancelBtn = document.getElementById("classes_cancel")
-    if (cancelBtn) {
-        cancelBtn.style.display = "flex"
-    }
-    
+    if (cancelBtn) cancelBtn.style.display = "flex"
+    const saveBtn = document.getElementById("classes_save")
+    if (saveBtn) saveBtn.style.display = "block"
+
     // Create a new temporary group structure
     tempEditingGroup = {
         name: "",
@@ -268,10 +287,10 @@ function hideClassesError() {
 }
 
 function saveClassGroupEdit(){
-    // Hide any previous errors
+    if (editingClassGroupName === DEFAULT_GROUP_KEY) {
+        return
+    }
     hideClassesError()
-    
-    // Validation
     const class_name = document.getElementById("class_name")
     if (!class_name || !class_name.value || class_name.value.trim() === "") {
         showClassesError("Por favor, informe o nome do grupo de classificações")
@@ -684,6 +703,8 @@ function loadAppConfig() {
             if (data.classes_groups && Object.keys(data.classes_groups).length > 0) {
                 classes_groups = data.classes_groups
             }
+            // Always restore the fixed default group so it is never overwritten by saved data
+            classes_groups[DEFAULT_GROUP_KEY] = JSON.parse(JSON.stringify(DEFAULT_CLASS_GROUP))
             if (data.gemini_api_key != null) {
                 geminiApiKey = data.gemini_api_key
                 const input = document.getElementById('gemini_api_key')
@@ -693,6 +714,7 @@ function loadAppConfig() {
         })
         .catch(() => {
             loadGeminiApiKey()
+            classes_groups[DEFAULT_GROUP_KEY] = JSON.parse(JSON.stringify(DEFAULT_CLASS_GROUP))
             readClasses()
         })
 }
