@@ -241,11 +241,10 @@ def _get_categories_for_group(classes_groups: dict, group_key: str):
     return categories
 
 
-def _normalize_label(text: str, valid_names: set) -> str:
-    """Map model output to a valid category name or NAO_SE_ENCAIXA."""
+def _normalize_one_label(text: str, valid_names: set) -> str:
+    """Map a single segment (no slash) to one valid category name or NAO_SE_ENCAIXA."""
     if not text:
         return NAO_SE_ENCAIXA
-    # Strip leading numbering (e.g. "1. Previsão", "2) Passado", "3 - Histórico")
     text = re.sub(r"^\s*\d+[\.\)\-]\s*", "", (text or "").strip()).strip()
     if not text:
         return NAO_SE_ENCAIXA
@@ -257,7 +256,7 @@ def _normalize_label(text: str, valid_names: set) -> str:
     for name in valid_names:
         if name in text or name.lower() in text_lower:
             return name
-    # Model may output "Alerta" when Previsão description says "Alertas e previsão"
+    # Model may output "Alerta" when the group maps alert risk to "Previsão", etc.
     if "alerta" in text_lower or "previsao" in text_lower:
         for name in valid_names:
             if name.lower() in ("previsão", "previsao"):
@@ -270,7 +269,45 @@ def _normalize_label(text: str, valid_names: set) -> str:
         for name in valid_names:
             if name.lower() in ("histórico", "historico"):
                 return name
+    if "aconteceu" in text_lower:
+        for name in valid_names:
+            if name.lower() == "aconteceu":
+                return name
+    if "política" in text_lower or "politica" in text_lower:
+        for name in valid_names:
+            if name.lower() in ("política", "politica"):
+                return name
+    if "outros" in text_lower:
+        for name in valid_names:
+            if name.lower() == "outros":
+                return name
     return NAO_SE_ENCAIXA
+
+
+def _normalize_label(text: str, valid_names: set) -> str:
+    """Map model output to a valid category name, optional Cat1/Cat2, or NAO_SE_ENCAIXA."""
+    if not text:
+        return NAO_SE_ENCAIXA
+    text = re.sub(r"^\s*\d+[\.\)\-]\s*", "", (text or "").strip()).strip()
+    if not text:
+        return NAO_SE_ENCAIXA
+    if text in valid_names:
+        return text
+    if NAO_SE_ENCAIXA in text:
+        return NAO_SE_ENCAIXA
+    if "/" in text:
+        parts = [p.strip() for p in text.split("/") if p.strip()]
+        if len(parts) >= 2:
+            a = _normalize_one_label(parts[0], valid_names)
+            b = _normalize_one_label(parts[1], valid_names)
+            if a != NAO_SE_ENCAIXA and b != NAO_SE_ENCAIXA and a != b:
+                return f"{a}/{b}"
+            if a != NAO_SE_ENCAIXA:
+                return a
+            if b != NAO_SE_ENCAIXA:
+                return b
+        return NAO_SE_ENCAIXA
+    return _normalize_one_label(text, valid_names)
 
 
 def _classify_news_batch(
@@ -280,7 +317,7 @@ def _classify_news_batch(
 ) -> list[str]:
     """
     Classify multiple news items in one (or few) API calls.
-    Returns one category name (or NAO_SE_ENCAIXA) per item, in order.
+    Returns one label per item (category name, optional Cat1/Cat2 with slash, or NAO_SE_ENCAIXA), in order.
     """
     if not api_key or not categories or not items:
         return [NAO_SE_ENCAIXA] * len(items) if items else []
@@ -290,17 +327,35 @@ def _classify_news_batch(
         f"- **{name}**: {desc}" if desc else f"- **{name}**"
         for name, desc in categories
     )
-    system_instruction = f"""Você é um classificador de notícias. Para cada notícia listada, escolha exatamente UMA categoria.
+    names_joined = ", ".join(f'"{n}"' for n, _ in categories)
+    system_instruction = f"""Você classifica manchetes/notícias sobre desastres naturais (enchentes, enxurradas, chuvas extremas, deslizamentos, temporais e eventos climáticos semelhantes), usando um codebook em português do Brasil.
 
-Categorias disponíveis (use APENAS um destes nomes, exatamente como estão):
+Categorias fixas do usuário (use APENAS estes nomes, exatamente como escritos abaixo; não invente outras):
 {categories_text}
 
-Regras:
-- Use a categoria de ALERTAS/PREVISÃO (ex.: Previsão) para: (1) previsão do tempo para os próximos dias; (2) alertas em vigor, avisos meteorológicos atuais, situações de risco no momento; (3) notícias sobre o que está ocorrendo AGORA ou em andamento (ex.: "emite alerta", "entra em alerta", "segue em alerta", "coloca em alerta", "em alerta para", risco atual, fenômeno ocorrendo no presente). Tudo isso é alerta/previsão.
-- Use a categoria de eventos PASSADOS (ex.: Passado) apenas para relatos de eventos já concluídos (estragos que já aconteceram, cobertura pós-evento, "atingiu", "deixou rastro", "após a chuva").
-- Só use "{NAO_SE_ENCAIXA}" se a notícia não se encaixar em nenhuma categoria listada.
+Resumo interpretativo (alinhe cada notícia ao nome da categoria acima que melhor corresponder):
+- Pós-desastre, consequências, recuperação, danos, vítimas, resgate já ocorrido, impactos, estudos sobre o evento → tende à categoria equivalente a "já aconteceu" (ex.: Aconteceu), se existir na lista.
+- Risco futuro, alertas, evacuação preventiva, pico de risco anunciado → tende a categoria de alerta/risco (ex.: Alerta).
+- Tempo ou clima em geral, previsão de chuva ou frente, sem desastre já em curso como foco principal → tende a previsão meteorológica (ex.: Previsão).
+- Ação governamental, obras, programas, investimentos públicos em mitigação → tende a política institucional (ex.: Política).
+- Menção indireta, curiosidade ou foco fora do desastre → use a categoria de "outros" ou equivalente na lista, se houver; caso contrário a mais próxima.
 
-IMPORTANTE: Responda com UMA LINHA por notícia, na mesma ordem (notícia 1 = linha 1, notícia 2 = linha 2). Em cada linha escreva APENAS o nome da categoria ou "{NAO_SE_ENCAIXA}". Nada mais."""
+Regras de codificação:
+- Manchetes em futuro ou indicando possibilidade de desastre não podem ser classificadas como "já aconteceu" (Aconteceu), se essa categoria existir.
+- Valores monetários: investimento/obras/programas → Política (se existir); perdas/danos → Aconteceu (se existir).
+- Consequências pós-evento contam como ocorrido (Aconteceu), quando aplicável.
+- Se houver dois focos claros, use duas categorias da lista separadas por barra, ex.: Aconteceu/Política — somente nomes exatamente como na lista do usuário.
+- Se uma única categoria for suficiente, use só um nome.
+- Só use "{NAO_SE_ENCAIXA}" se nenhuma categoria da lista se aplicar de forma plausível.
+
+Formato da resposta (obrigatório):
+- Lista sem numeração, na mesma ordem das notícias enviadas.
+- Cada linha contém SOMENTE o rótulo daquela notícia (um nome ou dois nomes com /). Não repita título nem trecho da notícia.
+- Não acrescente explicações ou comentários.
+- REGRA DE TAMANHO: o número de linhas não vazias DEVE ser exatamente igual ao número de notícias do lote. Não omita, una nem pule linhas. Se estiver em dúvida, ainda assim atribua a categoria mais plausível.
+- Antes de concluir, confira mentalmente: número de rótulos = número de notícias do lote.
+
+Nomes permitidos em cada linha: {names_joined} ou combinação Nome1/Nome2 com ambos na lista, ou "{NAO_SE_ENCAIXA}"."""
 
     result_labels: list[str] = []
     for start in range(0, len(items), CLASSIFY_BATCH_SIZE):
@@ -310,9 +365,13 @@ IMPORTANTE: Responda com UMA LINHA por notícia, na mesma ordem (notícia 1 = li
             snippet = (content[:800] if content else "(sem conteúdo)")
             batch_content_parts.append(f"NOTÍCIA {i}:\nTítulo: {title}\nConteúdo: {snippet}\n")
         user_content = "\n---\n".join(batch_content_parts)
-        user_content += f"\n\nResponda com {len(batch)} linhas (uma categoria por linha, na ordem 1 a {len(batch)}):"
+        user_content += (
+            f"\n\nResponda com exatamente {len(batch)} linhas: uma linha por notícia, "
+            f"na ordem (linha 1 = NOTÍCIA 1, …, linha {len(batch)} = NOTÍCIA {len(batch)}). "
+            f"Cada linha: apenas o rótulo (categoria ou Categoria1/Categoria2)."
+        )
 
-        max_tokens = min(8192, 64 + len(batch) * 32)
+        max_tokens = min(8192, 96 + len(batch) * 48)
         text = ""
         last_error = None
         for model in GEMINI_MODELS:

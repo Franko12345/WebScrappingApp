@@ -13,18 +13,26 @@ let tempEditingGroup = null // Temporary structure for editing/creating
 // Fixed default classification group (not editable by the user)
 const DEFAULT_CLASS_GROUP = {
     name: "Padrão",
-    description: "Classificação para notícias sobre chuvas fortes e eventos extremos meteorológicos. Use em estudos sobre desastres e eventos extremos.",
+    description: "Codebook em português para manchetes sobre desastres naturais (enchentes, chuvas extremas, deslizamentos, temporais e eventos climáticos semelhantes).",
     class_1: {
-        name: "Passado",
-        description: "Notícias sobre eventos já ocorridos: relatos de chuvas, enchentes ou desastres que já aconteceram; cobertura pós-evento."
+        name: "Aconteceu",
+        description: "Pós-desastre ou consequências: recuperação, reconstrução, danos, perdas, relatos de sobreviventes, impactos sociais ou econômicos, doações, estudos sobre o evento; desastre já ocorrido (resgate, vítimas, cobertura após o fato). Valores monetários referentes a perdas costumam ser Aconteceu."
     },
     class_2: {
-        name: "Histórico",
-        description: "Notícias com contexto histórico: dados de anos anteriores, comparações temporais, séries históricas de chuva ou desastres."
+        name: "Alerta",
+        description: "Risco futuro ou em formação: avisos da Defesa Civil, alertas, evacuação antes do evento, pico previsto de risco de enchente ou deslizamento; sinaliza possibilidade de desastre. Futuro ou possibilidade não podem ser rotulados como Aconteceu."
     },
     class_3: {
         name: "Previsão",
-        description: "Alertas e previsão do tempo: avisos meteorológicos em vigor, situações de risco no momento, previsões para os próximos dias, e notícias sobre fenômenos que estão ocorrendo no presente (ex.: emite alerta, entra em alerta, segue em alerta, em alerta para)."
+        description: "Tempo ou clima em geral: previsão meteorológica, chuva esperada, frentes frias, mudança de temperatura sem desastre já em curso ou sem foco em alerta de desastre."
+    },
+    class_4: {
+        name: "Política",
+        description: "Ação governamental, obra ou programa: investimentos públicos, obras de mitigação, barragens, dragagem, financiamento, programas oficiais ou administrativos ligados a desastres. Valores monetários de investimento costumam ser Política."
+    },
+    class_5: {
+        name: "Outros",
+        description: "Menção indireta, curiosidade ou texto não focado no desastre; desastre só como contexto. Use apenas quando nenhuma das outras categorias se encaixar com clareza."
     }
 }
 
